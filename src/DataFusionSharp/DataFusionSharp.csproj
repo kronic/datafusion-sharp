@@ -1,9 +1,28 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
     <PropertyGroup>
         <TargetFramework>net8.0</TargetFramework>
         <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>enable</Nullable>
+        <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     </PropertyGroup>
 
+    <!-- Rust build configuration -->
+    <PropertyGroup>
+        <NativeDir>$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)../../native'))</NativeDir>
+        <CargoProfile Condition="'$(Configuration)' == 'Release'">release</CargoProfile>
+        <CargoProfile Condition="'$(Configuration)' == 'Debug'">dev</CargoProfile>
+        <CargoTarget Condition="'$(CargoProfile)' == 'release'">release</CargoTarget>
+        <CargoTarget Condition="'$(CargoProfile)' == 'dev'">debug</CargoTarget>
+        <NativeLibName>libdatafusion_sharp_native.so</NativeLibName>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <!-- Copy native library to output directory for local development -->
+        <None Include="$(NativeDir)/target/$(CargoTarget)/$(NativeLibName)"
+              CopyToOutputDirectory="PreserveNewest"
+              Link="$(NativeLibName)"
+              Visible="false" />
+    </ItemGroup>
+    
 </Project>
