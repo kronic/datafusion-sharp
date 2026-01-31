@@ -1,84 +1,65 @@
-using System.Runtime.InteropServices;
 using DataFusionSharp.Interop;
 
 namespace DataFusionSharp;
 
 public sealed class SessionContext : IDisposable
 {
+    private readonly DataFusionRuntime _runtime;
+    
     private IntPtr _handle;
-    private bool _disposed;
 
-    public SessionContext()
+    internal SessionContext(DataFusionRuntime runtime, IntPtr handle)
     {
-        if (!DataFusion.IsInitialized)
-            DataFusion.Initialize();
-
-        _handle = NativeMethods.ContextNew();
-
-        if (_handle == IntPtr.Zero)
-            throw new DataFusionException("Failed to create SessionContext");
+        _runtime = runtime;
+        _handle = handle;
     }
-
-    internal IntPtr Handle
+    
+    ~SessionContext()
     {
-        get
+        DestroyContext();
+    }
+    
+    public Task RegisterCsvAsync(string tableName, string filePath)
+    {
+        var (id, tcs) = AsyncOperations.Instance.Create();
+        var result = NativeMethods.ContextRegisterCsv(_handle, tableName, filePath, AsyncVoidOperations.Callback, id);
+        if (result != DataFusionErrorCode.Ok)
         {
-            ObjectDisposedException.ThrowIf(_disposed, this);
-            return _handle;
+            AsyncOperations.Instance.Abort(id);
+            throw new DataFusionException(result, "Failed to start registering CSV file");
         }
+        return tcs.Task;
     }
-
-    public void RegisterCsv(string tableName, string path)
+    
+    public async Task<DataFrame> SqlAsync(string sql)
     {
-        ObjectDisposedException.ThrowIf(_disposed, this);
-        ArgumentException.ThrowIfNullOrWhiteSpace(tableName);
-        ArgumentException.ThrowIfNullOrWhiteSpace(path);
+        var (id, tcs) = AsyncOperations.Instance.Create<IntPtr>();
+        var result = NativeMethods.ContextSql(_handle, sql, AsyncIntPtrOperations.Callback, id);
+        if (result != DataFusionErrorCode.Ok)
+        {
+            AsyncOperations.Instance.Abort(id);
+            throw new DataFusionException(result, "Failed to start executing SQL query");
+        }
+        
+        var dataFrameHandle = await tcs.Task;
 
-        var result = NativeMethods.ContextRegisterCsv(_handle, tableName, path);
-
-        if (result != ErrorCode.Ok)
-            throw new DataFusionException(GetLastError() ?? $"Failed to register CSV: {result}");
+        return new DataFrame(this, dataFrameHandle);
     }
-
-    public DataFrame Sql(string sql)
-    {
-        ObjectDisposedException.ThrowIf(_disposed, this);
-        ArgumentException.ThrowIfNullOrWhiteSpace(sql);
-
-        var dfHandle = NativeMethods.ContextSql(_handle, sql);
-
-        if (dfHandle == IntPtr.Zero)
-            throw new DataFusionException(GetLastError() ?? "Failed to execute SQL");
-
-        return new DataFrame(dfHandle, this);
-    }
-
-    internal string? GetLastError()
-    {
-        var length = NativeMethods.ContextLastErrorLength(_handle);
-
-        if (length <= 0)
-            return null;
-
-        var errorPtr = NativeMethods.ContextLastError(_handle);
-
-        if (errorPtr == IntPtr.Zero)
-            return null;
-
-        return Marshal.PtrToStringUTF8(errorPtr, length);
-    }
-
+    
     public void Dispose()
     {
-        if (_disposed)
+        DestroyContext();
+        GC.SuppressFinalize(this);
+    }
+    
+    private void DestroyContext()
+    {
+        var handle = _handle;
+        if (handle == IntPtr.Zero)
             return;
-
-        if (_handle != IntPtr.Zero)
-        {
-            NativeMethods.ContextFree(_handle);
-            _handle = IntPtr.Zero;
-        }
-
-        _disposed = true;
+        
+        _handle = IntPtr.Zero;
+        
+        NativeMethods.ContextDestroy(handle);
     }
 }

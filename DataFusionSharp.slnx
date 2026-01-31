@@ -6,6 +6,7 @@
     <File Path="NOTICE.txt" />
     <File Path="README.md" />
   </Folder>
+  <Project Path="examples/QueryCsv/QueryCsv.csproj" />
   <Project Path="src/DataFusionSharp/DataFusionSharp.csproj" />
   <Project Path="tests/DataFusionSharp.Tests/DataFusionSharp.Tests.csproj" />
 </Solution>

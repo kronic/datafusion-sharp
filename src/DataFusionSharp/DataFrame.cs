@@ -2,55 +2,60 @@ using DataFusionSharp.Interop;
 
 namespace DataFusionSharp;
 
-public sealed class DataFrame : IDisposable
+public class DataFrame : IDisposable
 {
+    private readonly SessionContext _sessionContext;
     private IntPtr _handle;
-    private readonly SessionContext _context;
-    private bool _disposed;
-
-    internal DataFrame(IntPtr handle, SessionContext context)
+    
+    internal DataFrame(SessionContext sessionContext, IntPtr handle)
     {
+        _sessionContext = sessionContext;
         _handle = handle;
-        _context = context;
     }
-
-    public ulong Count()
+    
+    ~DataFrame()
     {
-        ObjectDisposedException.ThrowIf(_disposed, this);
-
-        var result = NativeMethods.DataFrameCount(_context.Handle, _handle, out var count);
-
-        if (result != ErrorCode.Ok)
-            throw new DataFusionException(_context.GetLastError() ?? $"Failed to count rows: {result}");
-
-        // Count consumes the dataframe in Rust
-        _handle = IntPtr.Zero;
-        _disposed = true;
-
-        return count;
+        DestroyDataFrame();
     }
-
-    public void Show()
+    
+    public Task<ulong> CountAsync()
     {
-        ObjectDisposedException.ThrowIf(_disposed, this);
-
-        var result = NativeMethods.DataFrameShow(_context.Handle, _handle);
-
-        if (result != ErrorCode.Ok)
-            throw new DataFusionException(_context.GetLastError() ?? $"Failed to show dataframe: {result}");
+        var (id, tcs) = AsyncOperations.Instance.Create<ulong>();
+        var result = NativeMethods.DataFrameCount(_handle, AsyncUInt64Operations.Callback, id);
+        if (result != DataFusionErrorCode.Ok)
+        {
+            AsyncOperations.Instance.Abort(id);
+            throw new DataFusionException(result, "Failed to start counting rows in DataFrame");
+        }
+        return tcs.Task;
     }
 
+    public Task ShowAsync()
+    {
+        var (id, tcs) = AsyncOperations.Instance.Create();
+        var result = NativeMethods.DataFrameShow(_handle, AsyncVoidOperations.Callback, id);
+        if (result != DataFusionErrorCode.Ok)
+        {
+            AsyncOperations.Instance.Abort(id);
+            throw new DataFusionException(result, "Failed to start showing DataFrame");
+        }
+        return tcs.Task;
+    }
+    
     public void Dispose()
     {
-        if (_disposed)
+        DestroyDataFrame();
+        GC.SuppressFinalize(this);
+    }
+    
+    private void DestroyDataFrame()
+    {
+        var handle = _handle;
+        if (handle == IntPtr.Zero)
             return;
-
-        if (_handle != IntPtr.Zero)
-        {
-            NativeMethods.DataFrameFree(_handle);
-            _handle = IntPtr.Zero;
-        }
-
-        _disposed = true;
+        
+        _handle = IntPtr.Zero;
+        
+        NativeMethods.DataFrameDestroy(handle);
     }
 }

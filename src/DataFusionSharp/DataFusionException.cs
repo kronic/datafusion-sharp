@@ -1,12 +1,26 @@
+using DataFusionSharp.Interop;
+
 namespace DataFusionSharp;
 
 public class DataFusionException : Exception
 {
-    public DataFusionException(string message) : base(message)
+    public DataFusionErrorCode ErrorCode { get; }
+
+    public DataFusionException(DataFusionErrorCode errorCode)
+        : base($"DataFusion error occurred: {errorCode}")
     {
+        ErrorCode = errorCode;
+    }
+    
+    public DataFusionException(DataFusionErrorCode errorCode, string message)
+        : base(message)
+    {
+        ErrorCode = errorCode;
     }
 
-    public DataFusionException(string message, Exception innerException) : base(message, innerException)
+    public DataFusionException(DataFusionErrorCode errorCode, string message, Exception innerException)
+        : base(message, innerException)
     {
+        ErrorCode = errorCode;
     }
 }
