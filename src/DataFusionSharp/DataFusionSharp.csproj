@@ -20,7 +20,7 @@
     <ItemGroup>
         <!-- Copy native library to output directory for local development -->
         <None Include="$(NativeDir)/target/$(CargoTarget)/$(NativeLibName)"
-              CopyToOutputDirectory="Always"
+              CopyToOutputDirectory="PreserveNewest"
               Link="$(NativeLibName)"
               Visible="false" />
     </ItemGroup>

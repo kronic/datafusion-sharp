@@ -1,6 +1,6 @@
 namespace DataFusionSharp.Tests;
 
-public class RuntimeTests
+public sealed class RuntimeTests
 {
     [Fact]
     public void Create_Returns()

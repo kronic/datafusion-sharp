@@ -5,12 +5,31 @@ pub enum ErrorCode {
     Panic = 1,
     InvalidArgument = 2,
     RuntimeInitializationFailed = 3,
-    TableRegistrationFailed = 4,
-    SqlError = 5,
+    RuntimeShutdownFailed = 4,
+    TableRegistrationFailed = 5,
+    SqlError = 6,
+    DataFrameError = 7
 }
 
-#[derive(Debug)]
-pub(crate) struct Error {
-    pub code: ErrorCode,
-    pub message: String,
+#[derive(Debug, Clone)]
+pub(crate) struct ErrorInfo {
+    code: ErrorCode,
+    message: String
+}
+
+impl ErrorInfo {
+    pub fn new<E: std::error::Error>(code: ErrorCode, error: E) -> Self {
+        Self {
+            code,
+            message: error.to_string()
+        }
+    }
+    
+    pub fn code(&self) -> ErrorCode {
+        self.code
+    }
+    
+    pub fn message(&self) -> &str {
+        &self.message
+    }
 }

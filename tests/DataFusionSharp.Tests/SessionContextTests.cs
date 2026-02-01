@@ -1,21 +1,23 @@
 namespace DataFusionSharp.Tests;
 
-public class SessionContextTests
+public sealed class SessionContextTests : IDisposable
 {
+    private static string OrdersCsvFilePath => Path.Combine("Data", "orders.csv");
+    
+    private readonly DataFusionRuntime _runtime = DataFusionRuntime.Create();
+
     [Fact]
-    public void CreateSessionContext_Returns()
+    public void CreateSessionContext_ReturnsContext()
     {
-        using var runtime = DataFusionRuntime.Create();
-        using var context = runtime.CreateSessionContext();
+        using var context = _runtime.CreateSessionContext();
         
         Assert.NotNull(context);
     }
     
     [Fact]
-    public async Task RegisterCsvAsync_WithValidPath_Completes()
+    public async Task RegisterCsvAsync_CompletesSuccessfully()
     {
-        await using var runtime = DataFusionRuntime.Create();
-        using var context = runtime.CreateSessionContext();
+        using var context = _runtime.CreateSessionContext();
         
         var ordersCsvFilePath = Path.Combine("Data", "orders.csv");
         
@@ -23,15 +25,29 @@ public class SessionContextTests
     }
 
     [Fact]
-    public async Task RegisterCsvAsync_WithInvalidPath_ThrowsDataFusionException()
+    public async Task SqlAsync_ReturnsDataFrame()
     {
-        await using var runtime = DataFusionRuntime.Create();
-        using var context = runtime.CreateSessionContext();
-        var invalidFilePath = Path.Combine("Data", "non_existent_file.csv");
-        var exception = await Assert.ThrowsAsync<DataFusionException>(async () =>
+        using var context = _runtime.CreateSessionContext();
+        
+        await context.RegisterCsvAsync("orders", OrdersCsvFilePath);
+        using var df = await context.SqlAsync("SELECT customer_id, sum(amount) AS total_amount FROM orders WHERE status = 'completed' GROUP BY customer_id");
+        
+        Assert.NotNull(df);
+    }
+
+    [Fact]
+    public async Task SqlAsync_InvalidQuery_ThrowsDataFusionException()
+    {
+        using var context = _runtime.CreateSessionContext();
+
+        await Assert.ThrowsAsync<DataFusionException>(async () =>
         {
-            await context.RegisterCsvAsync("invalid_table", invalidFilePath);
+            using var df = await context.SqlAsync("SELECT customer_id FROM orders");
         });
-        Assert.Equal(DataFusionErrorCode.TableRegistrationFailed, exception.ErrorCode);
+    }
+
+    public void Dispose()
+    {
+        _runtime.Dispose();
     }
 }

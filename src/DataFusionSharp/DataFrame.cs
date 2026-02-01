@@ -4,12 +4,13 @@ namespace DataFusionSharp;
 
 public class DataFrame : IDisposable
 {
-    private readonly SessionContext _sessionContext;
     private IntPtr _handle;
+    
+    public SessionContext Context { get; }
     
     internal DataFrame(SessionContext sessionContext, IntPtr handle)
     {
-        _sessionContext = sessionContext;
+        Context = sessionContext;
         _handle = handle;
     }
     
@@ -21,7 +22,7 @@ public class DataFrame : IDisposable
     public Task<ulong> CountAsync()
     {
         var (id, tcs) = AsyncOperations.Instance.Create<ulong>();
-        var result = NativeMethods.DataFrameCount(_handle, AsyncUInt64Operations.Callback, id);
+        var result = NativeMethods.DataFrameCount(_handle, AsyncOperationCallbacks.UInt64Result, id);
         if (result != DataFusionErrorCode.Ok)
         {
             AsyncOperations.Instance.Abort(id);
@@ -30,10 +31,13 @@ public class DataFrame : IDisposable
         return tcs.Task;
     }
 
-    public Task ShowAsync()
+    public Task ShowAsync(ulong? limit = null)
     {
+        if (limit.HasValue)
+            ArgumentOutOfRangeException.ThrowIfNegativeOrZero(limit.Value, nameof(limit));
+        
         var (id, tcs) = AsyncOperations.Instance.Create();
-        var result = NativeMethods.DataFrameShow(_handle, AsyncVoidOperations.Callback, id);
+        var result = NativeMethods.DataFrameShow(_handle, limit ?? 0, AsyncOperationCallbacks.VoidResult, id);
         if (result != DataFusionErrorCode.Ok)
         {
             AsyncOperations.Instance.Abort(id);

@@ -1,5 +1,3 @@
-using DataFusionSharp.Interop;
-
 namespace DataFusionSharp;
 
 public class DataFusionException : Exception

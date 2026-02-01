@@ -1,4 +1,4 @@
-use crate::ErrorCode;
+pub type RuntimeHandle = std::sync::Arc<tokio::runtime::Runtime>;
 
 /// Creates a new Tokio multi-threaded runtime for DataFusion.
 ///
@@ -14,42 +14,38 @@ use crate::ErrorCode;
 pub extern "C" fn datafusion_runtime_new(
     worker_threads: u32,
     max_blocking_threads: u32,
-    runtime: *mut *mut tokio::runtime::Runtime) -> ErrorCode {
-    if runtime.is_null() {
-        return ErrorCode::InvalidArgument;
+    runtime_ptr: *mut *mut RuntimeHandle) -> crate::ErrorCode {
+    if runtime_ptr.is_null() {
+        return crate::ErrorCode::InvalidArgument;
     }
 
-    let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
-        let mut builder = tokio::runtime::Builder::new_multi_thread();
+    let mut builder = tokio::runtime::Builder::new_multi_thread();
 
-        if worker_threads > 0 {
-            builder.worker_threads(worker_threads as usize);
+    if worker_threads > 0 {
+        builder.worker_threads(worker_threads as usize);
+    }
+
+    if max_blocking_threads > 0 {
+        builder.max_blocking_threads(max_blocking_threads as usize);
+    }
+
+    builder.enable_all();
+
+    match builder.build() {
+        Ok(runtime) => {
+            let runtime_handle: RuntimeHandle = std::sync::Arc::new(runtime);
+            unsafe { *runtime_ptr = Box::into_raw(Box::new(runtime_handle)); }
+
+            dev_msg!("Successfully created Tokio runtime: {:p}", unsafe { *runtime_ptr });
+
+            crate::ErrorCode::Ok
         }
-
-        if max_blocking_threads > 0 {
-            builder.max_blocking_threads(max_blocking_threads as usize);
-        }
-
-        builder.enable_all();
-
-        match builder.build() {
-            Ok(rt) => {
-                unsafe { *runtime = Box::into_raw(Box::new(rt)); }
-                ErrorCode::Ok
-            }
-            Err(err) => {
-                eprintln!("[DataFusionSharp] Failed to initialize Tokio runtime: {}", err);
-                ErrorCode::RuntimeInitializationFailed
-            },
-        }
-    }));
-
-    result.unwrap_or_else(|err| {
-        let _ = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
-            eprintln!("[DataFusionSharp] Panic during runtime initialization: {:?}", err);
-        }));
-        ErrorCode::Panic
-    })
+        Err(err) => {
+            dev_msg!("Error creating Tokio runtime: {}", err);
+            eprintln!("[datafusion-sharp-native] Failed to initialize Tokio runtime: {}", err);
+            crate::ErrorCode::RuntimeInitializationFailed
+        },
+    }
 }
 
 /// Destroys a Tokio runtime created by `datafusion_runtime_new`.
@@ -64,22 +60,31 @@ pub extern "C" fn datafusion_runtime_new(
 /// - `runtime`: Pointer to the runtime to destroy
 /// - `timeout_millis`: Maximum time to wait for shutdown
 #[unsafe(no_mangle)]
-pub extern "C" fn datafusion_runtime_destroy(runtime: *mut tokio::runtime::Runtime, timeout_millis: u64) -> ErrorCode {
-    let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
-        if runtime.is_null() {
-            return ErrorCode::Ok;
+pub extern "C" fn datafusion_runtime_destroy(runtime_ptr: *mut RuntimeHandle, timeout_millis: u64) -> crate::ErrorCode {
+    if runtime_ptr.is_null() {
+        return crate::ErrorCode::Ok;
+    }
+
+    dev_msg!("Destroying Tokio runtime: {:p}", runtime_ptr);
+
+    let runtime_handle = unsafe { Box::from_raw(runtime_ptr) };
+
+    dev_msg!("Attempting to destroy Tokio runtime: {:p}", runtime_ptr);
+
+    match std::sync::Arc::try_unwrap(*runtime_handle) {
+        Ok(runtime) => {
+            runtime.shutdown_timeout(std::time::Duration::from_millis(timeout_millis));
+
+            dev_msg!("Successfully dropped Tokio runtime: {:p}", runtime_ptr);
+
+            crate::ErrorCode::Ok
         }
+        Err(arc) => {
+            dev_msg!("Cannot destroy Tokio runtime due to strong references: {:p}, references: {}", runtime_ptr, std::sync::Arc::strong_count(&arc));
 
-        let rt = unsafe { Box::from_raw(runtime) };
-        rt.shutdown_timeout(std::time::Duration::from_millis(timeout_millis));
+            eprintln!("[datafusion-sharp-native] Cannot destroy Tokio runtime: there are still {} strong references", std::sync::Arc::strong_count(&arc));
 
-        ErrorCode::Ok
-    }));
-
-    result.unwrap_or_else(|err| {
-        let _ = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
-            eprintln!("[DataFusionSharp] Panic during runtime shutdown: {:?}", err);
-        }));
-        ErrorCode::Panic
-    })
+            crate::ErrorCode::RuntimeInitializationFailed
+        }
+    }
 }

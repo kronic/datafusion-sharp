@@ -3,9 +3,18 @@
 await using var runtime = DataFusionRuntime.Create();
 using var context = runtime.CreateSessionContext();
 
-var ordersCsvFilePath = Path.Combine("Data", "orders.csv");
-await context.RegisterCsvAsync("orders", ordersCsvFilePath);
+await context.RegisterCsvAsync("customers", Path.Combine("Data", "customers.csv"));
+await context.RegisterCsvAsync("orders", Path.Combine("Data", "orders.csv"));
 
-using var df = await context.SqlAsync("SELECT customer_id, sum(amount) FROM orders WHERE status = 'completed' GROUP BY customer_id");
-
+using var df = await context.SqlAsync("SELECT customer_id, sum(amount) AS total_amount FROM orders WHERE status = 'completed' GROUP BY customer_id");
 await df.ShowAsync();
+Console.WriteLine($"Total rows: {await df.CountAsync()}");
+
+try
+{
+    using var tdf = await context.SqlAsync("SELECT some_invalid_column FROM orders");
+}
+catch (DataFusionException ex)
+{
+    Console.WriteLine($"Query failed: {ex.Message}");
+}
