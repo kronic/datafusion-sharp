@@ -111,11 +111,18 @@ pub extern "C" fn datafusion_dataframe_to_string(
     runtime.spawn(async move {
         let result = inner
             .to_string()
-            .await
-            .map(|r| crate::BytesData::new(r.as_bytes()))
-            .map_err(|e| crate::ErrorInfo::new(crate::ErrorCode::DataFrameError, e));
+            .await;
 
-        crate::invoke_callback(result, callback, callback_user_data);
+        match result {
+            Ok(s) => {
+                let data = crate::callback::BytesData::new(s.as_bytes());
+                crate::invoke_callback(Ok(data), callback, callback_user_data);
+            }
+            Err(err) => {
+                let err_info = crate::ErrorInfo::new(crate::ErrorCode::DataFrameError, err);
+                crate::invoke_callback(Err::<crate::callback::BytesData, _>(err_info), callback, callback_user_data);
+            }
+        }
     });
 
     crate::ErrorCode::Ok
