@@ -21,7 +21,7 @@ TODO: Provide a simple code example demonstrating basic usage
 
 - .NET 8.0 or later
 - Supported platforms:
-  - Linux (x64) 🚧 Planned
+  - Linux (x64)
   - Windows (x64) 🚧 Planned
   - macOS (x64, ARM64) 🚧 Planned
 
