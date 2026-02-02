@@ -25,4 +25,15 @@ internal static class AsyncOperationGenericCallbacks
         else
             AsyncOperations.Instance.CompleteWithError<ulong>(handle, ErrorInfoData.FromIntPtr(error).ToException());
     }
+
+    public static void StringResult(IntPtr result, IntPtr error, ulong handle)
+    {
+        if (error == IntPtr.Zero)
+        {
+            var data = BytesData.FromIntPtr(result);
+            AsyncOperations.Instance.CompleteWithResult(handle, data.GetAsUtf8());
+        }
+        else
+            AsyncOperations.Instance.CompleteWithError<string>(handle, ErrorInfoData.FromIntPtr(error).ToException());
+    }
 }

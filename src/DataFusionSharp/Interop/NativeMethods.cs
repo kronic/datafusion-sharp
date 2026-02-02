@@ -44,4 +44,7 @@ internal static partial class NativeMethods
     
     [LibraryImport(LibraryName, EntryPoint = "datafusion_dataframe_collect")]
     public static partial DataFusionErrorCode DataFrameCollect(IntPtr dataFrameHandle, AsyncCallback callback, ulong userData);
+
+    [LibraryImport(LibraryName, EntryPoint = "datafusion_dataframe_to_string")]
+    public static partial DataFusionErrorCode DataFrameToString(IntPtr dataFrameHandle, AsyncCallback callback, ulong userData);
 }

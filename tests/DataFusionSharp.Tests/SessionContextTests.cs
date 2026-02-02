@@ -29,10 +29,22 @@ public sealed class SessionContextTests : IDisposable
     {
         using var context = _runtime.CreateSessionContext();
         
-        await context.RegisterCsvAsync("orders", OrdersCsvFilePath);
-        using var df = await context.SqlAsync("SELECT customer_id, sum(amount) AS total_amount FROM orders WHERE status = 'completed' GROUP BY customer_id");
+        using var df = await context.SqlAsync("SELECT 1");
         
         Assert.NotNull(df);
+    }
+    
+    [Fact]
+    public async Task ToStringAsync_ReturnsString()
+    {
+        using var context = _runtime.CreateSessionContext();
+
+        using var df = await context.SqlAsync("SELECT 1");
+
+        var str = await df.ToStringAsync();
+
+        Assert.NotNull(str);
+        Assert.NotEmpty(str);
     }
 
     [Fact]

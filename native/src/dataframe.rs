@@ -89,6 +89,39 @@ pub extern "C" fn datafusion_dataframe_show(
 }
 
 #[unsafe(no_mangle)]
+pub extern "C" fn datafusion_dataframe_to_string(
+    df: *mut DataFrameWrapper,
+    callback: Option<crate::Callback>,
+    callback_user_data: u64
+) -> crate::ErrorCode {
+    if df.is_null() {
+        return crate::ErrorCode::InvalidArgument;
+    }
+
+    let Some(callback) = callback else {
+        return crate::ErrorCode::InvalidArgument;
+    };
+
+    let dataframe = unsafe { &*df };
+    let runtime = std::sync::Arc::clone(&dataframe.runtime);
+    let inner = dataframe.inner.clone();
+
+    dev_msg!("Executing to_string on DataFrame: {:p}", df);
+
+    runtime.spawn(async move {
+        let result = inner
+            .to_string()
+            .await
+            .map(|r| crate::BytesData::new(r.as_bytes()))
+            .map_err(|e| crate::ErrorInfo::new(crate::ErrorCode::DataFrameError, e));
+
+        crate::invoke_callback(result, callback, callback_user_data);
+    });
+
+    crate::ErrorCode::Ok
+}
+
+#[unsafe(no_mangle)]
 pub extern "C" fn datafusion_dataframe_schema(
     df: *mut DataFrameWrapper,
     callback: Option<crate::Callback>,

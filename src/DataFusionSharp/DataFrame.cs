@@ -73,6 +73,18 @@ public class DataFrame : IDisposable
 
         return tcs.Task;
     }
+
+    public Task<string> ToStringAsync()
+    {
+        var (id, tcs) = AsyncOperations.Instance.Create<string>();
+        var result = NativeMethods.DataFrameToString(_handle, AsyncOperationGenericCallbacks.StringResult, id);
+        if (result != DataFusionErrorCode.Ok)
+        {
+            AsyncOperations.Instance.Abort(id);
+            throw new DataFusionException(result, "Failed to start converting DataFrame to string");
+        }
+        return tcs.Task;
+    }
     
     public void Dispose()
     {
