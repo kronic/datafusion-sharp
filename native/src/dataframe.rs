@@ -13,9 +13,9 @@ impl DataFrameWrapper {
 }
 
 #[unsafe(no_mangle)]
-pub extern "C" fn datafusion_dataframe_destroy(dataframe_ptr: *mut DataFrameWrapper) -> crate::ErrorCode {
-    if !dataframe_ptr.is_null() {
-        unsafe { drop(Box::from_raw(dataframe_ptr)) };
+pub extern "C" fn datafusion_dataframe_destroy(df_ptr: *mut DataFrameWrapper) -> crate::ErrorCode {
+    if !df_ptr.is_null() {
+        unsafe { drop(Box::from_raw(df_ptr)) };
     }
 
     crate::ErrorCode::Ok
@@ -23,32 +23,25 @@ pub extern "C" fn datafusion_dataframe_destroy(dataframe_ptr: *mut DataFrameWrap
 
 #[unsafe(no_mangle)]
 pub extern "C" fn datafusion_dataframe_count(
-    dataframe_ptr: *mut DataFrameWrapper,
-    callback: Option<crate::Callback>,
-    callback_user_data: u64
+    df_ptr: *mut DataFrameWrapper,
+    callback: crate::Callback,
+    user_data: u64
 ) -> crate::ErrorCode {
-    if dataframe_ptr.is_null() {
-        return crate::ErrorCode::InvalidArgument;
-    }
+    let df_wrapper = ffi_ref!(df_ptr);
 
-    let Some(callback) = callback else {
-        return crate::ErrorCode::InvalidArgument;
-    };
+    let runtime = std::sync::Arc::clone(&df_wrapper.runtime);
+    let df = df_wrapper.inner.clone();
 
-    let dataframe = unsafe { &*dataframe_ptr };
-    let runtime = std::sync::Arc::clone(&dataframe.runtime);
-    let inner = dataframe.inner.clone();
-
-    dev_msg!("Executing count on DataFrame: {:p}", dataframe_ptr);
+    dev_msg!("Executing count on DataFrame: {:p}", df_ptr);
 
     runtime.spawn(async move {
-        let result = inner
+        let result = df
             .count()
             .await
             .map_err(|e| crate::ErrorInfo::new(crate::ErrorCode::DataFrameError, e))
             .map(|s| s as u64);
 
-        crate::invoke_callback(result, callback, callback_user_data);
+        crate::invoke_callback(result, callback, user_data);
     });
 
     crate::ErrorCode::Ok
@@ -56,33 +49,26 @@ pub extern "C" fn datafusion_dataframe_count(
 
 #[unsafe(no_mangle)]
 pub extern "C" fn datafusion_dataframe_show(
-    df: *mut DataFrameWrapper,
+    df_ptr: *mut DataFrameWrapper,
     limit: u64,
-    callback: Option<crate::Callback>,
-    callback_user_data: u64
+    callback: crate::Callback,
+    user_data: u64
 ) -> crate::ErrorCode {
-    if df.is_null() {
-        return crate::ErrorCode::InvalidArgument;
-    }
+    let df_wrapper = ffi_ref!(df_ptr);
 
-    let Some(callback) = callback else {
-        return crate::ErrorCode::InvalidArgument;
-    };
+    let runtime = std::sync::Arc::clone(&df_wrapper.runtime);
+    let df = df_wrapper.inner.clone();
 
-    let dataframe = unsafe { &*df };
-    let runtime = std::sync::Arc::clone(&dataframe.runtime);
-    let inner = dataframe.inner.clone();
-
-    dev_msg!("Executing show on DataFrame: {:p}", df);
+    dev_msg!("Executing show on DataFrame: {:p}", df_ptr);
 
     runtime.spawn(async move {
         let result = if limit > 0 {
-            inner.show_limit(limit as usize).await
+            df.show_limit(limit as usize).await
         } else {
-            inner.show().await
+            df.show().await
         }.map_err(|e| crate::ErrorInfo::new(crate::ErrorCode::DataFrameError, e));
 
-        crate::invoke_callback(result, callback, callback_user_data);
+        crate::invoke_callback(result, callback, user_data);
     });
 
     crate::ErrorCode::Ok
@@ -90,37 +76,30 @@ pub extern "C" fn datafusion_dataframe_show(
 
 #[unsafe(no_mangle)]
 pub extern "C" fn datafusion_dataframe_to_string(
-    df: *mut DataFrameWrapper,
-    callback: Option<crate::Callback>,
-    callback_user_data: u64
+    df_ptr: *mut DataFrameWrapper,
+    callback: crate::Callback,
+    user_data: u64
 ) -> crate::ErrorCode {
-    if df.is_null() {
-        return crate::ErrorCode::InvalidArgument;
-    }
+    let df_wrapper = ffi_ref!(df_ptr);
 
-    let Some(callback) = callback else {
-        return crate::ErrorCode::InvalidArgument;
-    };
+    let runtime = std::sync::Arc::clone(&df_wrapper.runtime);
+    let df = df_wrapper.inner.clone();
 
-    let dataframe = unsafe { &*df };
-    let runtime = std::sync::Arc::clone(&dataframe.runtime);
-    let inner = dataframe.inner.clone();
-
-    dev_msg!("Executing to_string on DataFrame: {:p}", df);
+    dev_msg!("Executing to_string on DataFrame: {:p}", df_ptr);
 
     runtime.spawn(async move {
-        let result = inner
+        let result = df
             .to_string()
             .await;
 
         match result {
             Ok(s) => {
                 let data = crate::callback::BytesData::new(s.as_bytes());
-                crate::invoke_callback(Ok(data), callback, callback_user_data);
+                crate::invoke_callback(Ok(data), callback, user_data);
             }
             Err(err) => {
                 let err_info = crate::ErrorInfo::new(crate::ErrorCode::DataFrameError, err);
-                crate::invoke_callback(Err::<crate::callback::BytesData, _>(err_info), callback, callback_user_data);
+                crate::invoke_callback(Err::<crate::callback::BytesData, _>(err_info), callback, user_data);
             }
         }
     });
@@ -130,23 +109,16 @@ pub extern "C" fn datafusion_dataframe_to_string(
 
 #[unsafe(no_mangle)]
 pub extern "C" fn datafusion_dataframe_schema(
-    df: *mut DataFrameWrapper,
-    callback: Option<crate::Callback>,
-    callback_user_data: u64
+    df_ptr: *mut DataFrameWrapper,
+    callback: crate::Callback,
+    user_data: u64
 ) -> crate::ErrorCode {
-    if df.is_null() {
-        return crate::ErrorCode::InvalidArgument;
-    }
+    let df_wrapper = ffi_ref!(df_ptr);
 
-    let Some(callback) = callback else {
-        return crate::ErrorCode::InvalidArgument;
-    };
+    dev_msg!("Executing schema on DataFrame: {:p}", df_ptr);
 
-    let dataframe = unsafe { &*df };
-
-    dev_msg!("Executing schema on DataFrame: {:p}", df);
-
-    let schema = dataframe.inner.schema().as_arrow();
+    let df = &df_wrapper.inner;
+    let schema = df.schema().as_arrow();
 
     let mut serialized_data = Vec::new();
 
@@ -155,40 +127,33 @@ pub extern "C" fn datafusion_dataframe_schema(
         .map(|_| crate::callback::BytesData::new(serialized_data.as_slice()))
         .map_err(|e| crate::ErrorInfo::new(crate::ErrorCode::DataFrameError, e));
 
-    dev_msg!("Finished executing schema on DataFrame: {:p}, schema size: {}", df, serialized_data.len());
+    dev_msg!("Finished executing schema on DataFrame: {:p}, schema size: {}", df_ptr, serialized_data.len());
 
-    crate::invoke_callback(result, callback, callback_user_data);
+    crate::invoke_callback(result, callback, user_data);
 
     crate::ErrorCode::Ok
 }
 
 #[unsafe(no_mangle)]
 pub extern "C" fn datafusion_dataframe_collect(
-    df: *mut DataFrameWrapper,
-    callback: Option<crate::Callback>,
-    callback_user_data: u64
+    df_ptr: *mut DataFrameWrapper,
+    callback: crate::Callback,
+    user_data: u64
 ) -> crate::ErrorCode {
-    if df.is_null() {
-        return crate::ErrorCode::InvalidArgument;
-    }
+    let df_wrapper = ffi_ref!(df_ptr);
 
-    let Some(callback) = callback else {
-        return crate::ErrorCode::InvalidArgument;
-    };
+    let runtime = std::sync::Arc::clone(&df_wrapper.runtime);
+    let df = df_wrapper.inner.clone();
 
-    let dataframe = unsafe { &*df };
-    let runtime = std::sync::Arc::clone(&dataframe.runtime);
-    let inner = dataframe.inner.clone();
-
-    dev_msg!("Executing collect on DataFrame: {:p}", df);
+    dev_msg!("Executing collect on DataFrame: {:p}", df_ptr);
 
     runtime.spawn(async move {
         let mut serialized_data = Vec::new();
 
-        let schema = inner.schema().as_arrow();
+        let schema = df.schema().as_arrow();
         let result = match datafusion::arrow::ipc::writer::StreamWriter::try_new(&mut serialized_data, schema) {
             Ok(mut s) => {
-                inner
+                df
                     .collect()
                     .await
                     .map(|batches| -> datafusion::error::Result<()> {
@@ -208,7 +173,7 @@ pub extern "C" fn datafusion_dataframe_collect(
 
         dev_msg!("Finished executing collect, serialized size: {}", serialized_data.len());
 
-        crate::invoke_callback(result, callback, callback_user_data);
+        crate::invoke_callback(result, callback, user_data);
     });
 
     crate::ErrorCode::Ok

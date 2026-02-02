@@ -44,30 +44,13 @@ pub extern "C" fn datafusion_context_register_csv(
     context_ptr: *mut SessionContextWrapper,
     table_ref_ptr: *const std::ffi::c_char,
     table_path_ptr: *const std::ffi::c_char,
-    callback: Option<crate::Callback>,
-    callback_ud: u64
+    callback: crate::Callback,
+    user_data: u64
 ) -> crate::ErrorCode {
-    if context_ptr.is_null() || table_ref_ptr.is_null() || table_path_ptr.is_null() {
-        return crate::ErrorCode::InvalidArgument;
-    }
+    let context = ffi_ref!(context_ptr);
+    let table_ref = ffi_cstr_to_string!(table_ref_ptr);
+    let table_path = ffi_cstr_to_string!(table_path_ptr);
 
-    let Some(callback) = callback else {
-        return crate::ErrorCode::InvalidArgument;
-    };
-
-    let Ok(table_ref) = unsafe { std::ffi::CStr::from_ptr(table_ref_ptr) }
-        .to_str()
-        .map(|s| s.to_string()) else {
-        return crate::ErrorCode::InvalidArgument;
-    };
-
-    let Ok(table_path) = unsafe { std::ffi::CStr::from_ptr(table_path_ptr) }
-        .to_str()
-        .map(|s| s.to_string()) else {
-        return crate::ErrorCode::InvalidArgument;
-    };
-
-    let context = unsafe { &*context_ptr };
     let runtime = std::sync::Arc::clone(&context.runtime);
     let inner = std::sync::Arc::clone(&context.inner);
 
@@ -81,7 +64,7 @@ pub extern "C" fn datafusion_context_register_csv(
 
         dev_msg!("Finished registering CSV table '{}' from path '{}'", table_ref, table_path);
 
-        crate::invoke_callback(result, callback, callback_ud);
+        crate::invoke_callback(result, callback, user_data);
     });
 
     crate::ErrorCode::Ok
@@ -91,24 +74,12 @@ pub extern "C" fn datafusion_context_register_csv(
 pub extern "C" fn datafusion_context_sql(
     context_ptr: *mut SessionContextWrapper,
     sql_ptr: *const std::ffi::c_char,
-    callback: Option<crate::Callback>,
-    callback_user_data: u64
+    callback: crate::Callback,
+    user_data: u64
 ) -> crate::ErrorCode {
-    if context_ptr.is_null() || sql_ptr.is_null() {
-        return crate::ErrorCode::InvalidArgument;
-    }
+    let context = ffi_ref!(context_ptr);
+    let sql = ffi_cstr_to_string!(sql_ptr);
 
-    let Some(callback) = callback else {
-        return crate::ErrorCode::InvalidArgument;
-    };
-
-    let Ok(sql) = unsafe { std::ffi::CStr::from_ptr(sql_ptr) }
-        .to_str()
-        .map(|s| s.to_string()) else {
-        return crate::ErrorCode::InvalidArgument;
-    };
-
-    let context = unsafe { &*context_ptr };
     let runtime = std::sync::Arc::clone(&context.runtime);
     let inner = std::sync::Arc::clone(&context.inner);
 
@@ -126,7 +97,7 @@ pub extern "C" fn datafusion_context_sql(
 
         dev_msg!("Finished executing SQL query: {}, dataframe ptr: {:p}", sql, result.as_ref().ok().map_or(std::ptr::null(), |ptr| *ptr));
 
-        crate::invoke_callback(result, callback, callback_user_data);
+        crate::invoke_callback(result, callback, user_data);
     });
 
     crate::ErrorCode::Ok
