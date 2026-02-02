@@ -12,24 +12,35 @@ impl SessionContextWrapper {
     }
 }
 
+/// Creates a new `SessionContext` bound to a runtime.
+///
+/// # Safety
+/// - `runtime_ptr` must be a valid pointer returned by `datafusion_runtime_new`
+/// - `context_ptr` must be a valid, aligned, non-null pointer to writable memory
+/// - Caller must call `datafusion_context_destroy` exactly once with the returned pointer
 #[unsafe(no_mangle)]
-pub extern "C" fn datafusion_context_new(runtime_ptr: *mut crate::RuntimeHandle, context_ptr: *mut *mut SessionContextWrapper) -> crate::ErrorCode {
-    if runtime_ptr.is_null() || context_ptr.is_null() {
+pub unsafe extern "C" fn datafusion_context_new(runtime_ptr: *mut crate::RuntimeHandle, context_ptr: *mut *mut SessionContextWrapper) -> crate::ErrorCode {
+    if context_ptr.is_null() {
         return crate::ErrorCode::InvalidArgument;
     }
 
-    let runtime_handle = unsafe { &*runtime_ptr };
+    let runtime_handle = ffi_ref!(runtime_ptr);
 
-    let ctx = Box::new(SessionContextWrapper::new(std::sync::Arc::clone(&*runtime_handle)));
-    unsafe { *context_ptr = Box::into_raw(ctx); }
+    let context = Box::new(SessionContextWrapper::new(std::sync::Arc::clone(runtime_handle)));
+    unsafe { *context_ptr = Box::into_raw(context); }
 
     dev_msg!("Successfully created context: {:p}", unsafe { *context_ptr });
 
     crate::ErrorCode::Ok
 }
 
+/// Destroys a `SessionContext` created by `datafusion_context_new`.
+///
+/// # Safety
+/// - `context_ptr` must be a valid pointer returned by `datafusion_context_new`, or null
+/// - Caller must not use `context_ptr` after this call
 #[unsafe(no_mangle)]
-pub extern "C" fn datafusion_context_destroy(context_ptr: *mut SessionContextWrapper) -> crate::ErrorCode {
+pub unsafe extern "C" fn datafusion_context_destroy(context_ptr: *mut SessionContextWrapper) -> crate::ErrorCode {
     dev_msg!("Destroying context: {:p}", context_ptr);
 
     if !context_ptr.is_null() {
@@ -39,8 +50,17 @@ pub extern "C" fn datafusion_context_destroy(context_ptr: *mut SessionContextWra
     crate::ErrorCode::Ok
 }
 
+/// Registers a CSV file as a table in the `SessionContext`.
+///
+/// This is an async operation. The callback is invoked on completion with no result data.
+///
+/// # Safety
+/// - `context_ptr` must be a valid pointer returned by `datafusion_context_new`
+/// - `table_ref_ptr` must be a valid null-terminated UTF-8 string
+/// - `table_path_ptr` must be a valid null-terminated UTF-8 string
+/// - `callback` must be valid to call from any thread
 #[unsafe(no_mangle)]
-pub extern "C" fn datafusion_context_register_csv(
+pub unsafe extern "C" fn datafusion_context_register_csv(
     context_ptr: *mut SessionContextWrapper,
     table_ref_ptr: *const std::ffi::c_char,
     table_path_ptr: *const std::ffi::c_char,
@@ -70,8 +90,17 @@ pub extern "C" fn datafusion_context_register_csv(
     crate::ErrorCode::Ok
 }
 
+/// Executes a SQL query and returns a `DataFrame`.
+///
+/// This is an async operation. The callback is invoked on completion with a `DataFrame` pointer.
+///
+/// # Safety
+/// - `context_ptr` must be a valid pointer returned by `datafusion_context_new`
+/// - `sql_ptr` must be a valid null-terminated UTF-8 string
+/// - `callback` must be valid to call from any thread
+/// - Caller must call `datafusion_dataframe_destroy` on the returned `DataFrame` pointer
 #[unsafe(no_mangle)]
-pub extern "C" fn datafusion_context_sql(
+pub unsafe extern "C" fn datafusion_context_sql(
     context_ptr: *mut SessionContextWrapper,
     sql_ptr: *const std::ffi::c_char,
     callback: crate::Callback,

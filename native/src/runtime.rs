@@ -1,6 +1,6 @@
 pub type RuntimeHandle = std::sync::Arc<tokio::runtime::Runtime>;
 
-/// Creates a new Tokio multi-threaded runtime for DataFusion.
+/// Creates a new Tokio multi-threaded runtime for `DataFusion`.
 ///
 /// # Safety
 /// - `runtime` must be a valid, aligned, non-null pointer to writable memory
@@ -11,7 +11,7 @@ pub type RuntimeHandle = std::sync::Arc<tokio::runtime::Runtime>;
 /// - `max_blocking_threads`: Max blocking threads (0 = automatic)
 /// - `runtime`: Output pointer to receive the runtime pointer
 #[unsafe(no_mangle)]
-pub extern "C" fn datafusion_runtime_new(
+pub unsafe extern "C" fn datafusion_runtime_new(
     worker_threads: u32,
     max_blocking_threads: u32,
     runtime_ptr: *mut *mut RuntimeHandle) -> crate::ErrorCode {
@@ -42,7 +42,7 @@ pub extern "C" fn datafusion_runtime_new(
         }
         Err(err) => {
             dev_msg!("Error creating Tokio runtime: {}", err);
-            eprintln!("[datafusion-sharp-native] Failed to initialize Tokio runtime: {}", err);
+            eprintln!("[datafusion-sharp-native] Failed to initialize Tokio runtime: {err}");
             crate::ErrorCode::RuntimeInitializationFailed
         },
     }
@@ -60,7 +60,7 @@ pub extern "C" fn datafusion_runtime_new(
 /// - `runtime`: Pointer to the runtime to destroy
 /// - `timeout_millis`: Maximum time to wait for shutdown
 #[unsafe(no_mangle)]
-pub extern "C" fn datafusion_runtime_destroy(runtime_ptr: *mut RuntimeHandle, timeout_millis: u64) -> crate::ErrorCode {
+pub unsafe extern "C" fn datafusion_runtime_destroy(runtime_ptr: *mut RuntimeHandle, timeout_millis: u64) -> crate::ErrorCode {
     if runtime_ptr.is_null() {
         return crate::ErrorCode::Ok;
     }

@@ -14,6 +14,7 @@ impl BytesData {
     pub(crate) fn new(s: &[u8]) -> Self {
         BytesData {
             data: s.as_ptr(),
+            #[allow(clippy::cast_possible_truncation)]
             len: s.len() as u32,
         }
     }
@@ -37,12 +38,12 @@ impl ErrorInfoData {
 pub(crate) fn invoke_callback<T>(result: Result<T, crate::ErrorInfo>, callback: Callback, user_data: u64) {
     match result {
         Ok(value) => {
-            let value_ptr = &value as *const T as *const std::ffi::c_void;
+            let value_ptr = (&raw const value).cast::<std::ffi::c_void>();
             callback(value_ptr, std::ptr::null(), user_data);
         }
         Err(error) => {
             let err_info = ErrorInfoData::new(&error);
-            let err_into_ptr = &err_info as *const ErrorInfoData;
+            let err_into_ptr = &raw const err_info;
             callback(std::ptr::null(), err_into_ptr, user_data);
         }
     }

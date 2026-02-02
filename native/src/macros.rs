@@ -16,7 +16,7 @@ macro_rules! dev_msg {
 }
 
 /// Converts a raw pointer to a reference.
-/// Returns InvalidArgument error code if the pointer is null.
+/// Returns `InvalidArgument` error code if the pointer is null.
 #[macro_export]
 macro_rules! ffi_ref {
     ($ptr:expr) => {{
@@ -28,7 +28,7 @@ macro_rules! ffi_ref {
 }
 
 /// Converts a C string pointer to an owned String.
-/// Returns InvalidArgument error code if the pointer is null or not valid UTF-8.
+/// Returns `InvalidArgument` error code if the pointer is null or not valid UTF-8.
 #[macro_export]
 macro_rules! ffi_cstr_to_string {
     ($ptr:expr) => {{

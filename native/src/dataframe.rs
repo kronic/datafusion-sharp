@@ -12,8 +12,13 @@ impl DataFrameWrapper {
     }
 }
 
+/// Destroys a `DataFrame` and frees its resources.
+///
+/// # Safety
+/// - `df_ptr` must be a valid pointer returned by other public functions, or null
+/// - Caller must not use `df_ptr` after this call
 #[unsafe(no_mangle)]
-pub extern "C" fn datafusion_dataframe_destroy(df_ptr: *mut DataFrameWrapper) -> crate::ErrorCode {
+pub unsafe extern "C" fn datafusion_dataframe_destroy(df_ptr: *mut DataFrameWrapper) -> crate::ErrorCode {
     if !df_ptr.is_null() {
         unsafe { drop(Box::from_raw(df_ptr)) };
     }
@@ -21,8 +26,15 @@ pub extern "C" fn datafusion_dataframe_destroy(df_ptr: *mut DataFrameWrapper) ->
     crate::ErrorCode::Ok
 }
 
+/// Counts the number of rows in the `DataFrame`.
+///
+/// This is an async operation. The callback is invoked on completion with the row count as u64.
+///
+/// # Safety
+/// - `df_ptr` must be a valid pointer returned by other public functions
+/// - `callback` must be valid to call from any thread
 #[unsafe(no_mangle)]
-pub extern "C" fn datafusion_dataframe_count(
+pub unsafe extern "C" fn datafusion_dataframe_count(
     df_ptr: *mut DataFrameWrapper,
     callback: crate::Callback,
     user_data: u64
@@ -47,8 +59,18 @@ pub extern "C" fn datafusion_dataframe_count(
     crate::ErrorCode::Ok
 }
 
+/// Prints the `DataFrame` contents to stdout.
+///
+/// This is an async operation. The callback is invoked on completion with no result data.
+///
+/// # Safety
+/// - `df_ptr` must be a valid pointer returned by other public functions
+/// - `callback` must be valid to call from any thread
+///
+/// # Parameters
+/// - `limit`: Maximum number of rows to display (0 = no limit)
 #[unsafe(no_mangle)]
-pub extern "C" fn datafusion_dataframe_show(
+pub unsafe extern "C" fn datafusion_dataframe_show(
     df_ptr: *mut DataFrameWrapper,
     limit: u64,
     callback: crate::Callback,
@@ -63,6 +85,7 @@ pub extern "C" fn datafusion_dataframe_show(
 
     runtime.spawn(async move {
         let result = if limit > 0 {
+            #[allow(clippy::cast_possible_truncation)]
             df.show_limit(limit as usize).await
         } else {
             df.show().await
@@ -74,8 +97,15 @@ pub extern "C" fn datafusion_dataframe_show(
     crate::ErrorCode::Ok
 }
 
+/// Converts the `DataFrame` to a string representation.
+///
+/// This is an async operation. The callback is invoked on completion with the string as bytes.
+///
+/// # Safety
+/// - `df_ptr` must be a valid pointer returned by other public functions
+/// - `callback` must be valid to call from any thread
 #[unsafe(no_mangle)]
-pub extern "C" fn datafusion_dataframe_to_string(
+pub unsafe extern "C" fn datafusion_dataframe_to_string(
     df_ptr: *mut DataFrameWrapper,
     callback: crate::Callback,
     user_data: u64
@@ -107,8 +137,15 @@ pub extern "C" fn datafusion_dataframe_to_string(
     crate::ErrorCode::Ok
 }
 
+/// Returns the `DataFrame` schema as a serialized Arrow IPC stream.
+///
+/// This is a synchronous operation. The callback is invoked immediately with the schema bytes.
+///
+/// # Safety
+/// - `df_ptr` must be a valid pointer returned by other public functions
+/// - `callback` must be valid to call from the current thread
 #[unsafe(no_mangle)]
-pub extern "C" fn datafusion_dataframe_schema(
+pub unsafe extern "C" fn datafusion_dataframe_schema(
     df_ptr: *mut DataFrameWrapper,
     callback: crate::Callback,
     user_data: u64
@@ -124,7 +161,7 @@ pub extern "C" fn datafusion_dataframe_schema(
 
     let result = datafusion::arrow::ipc::writer::StreamWriter::try_new(&mut serialized_data, schema)
         .and_then(|mut s| s.flush())
-        .map(|_| crate::callback::BytesData::new(serialized_data.as_slice()))
+        .map(|()| crate::callback::BytesData::new(serialized_data.as_slice()))
         .map_err(|e| crate::ErrorInfo::new(crate::ErrorCode::DataFrameError, e));
 
     dev_msg!("Finished executing schema on DataFrame: {:p}, schema size: {}", df_ptr, serialized_data.len());
@@ -134,8 +171,15 @@ pub extern "C" fn datafusion_dataframe_schema(
     crate::ErrorCode::Ok
 }
 
+/// Materializes all records as a serialized Arrow IPC stream.
+///
+/// This is an async operation. The callback is invoked on completion with the serialized bytes.
+///
+/// # Safety
+/// - `df_ptr` must be a valid pointer returned by other public functions
+/// - `callback` must be valid to call from any thread
 #[unsafe(no_mangle)]
-pub extern "C" fn datafusion_dataframe_collect(
+pub unsafe extern "C" fn datafusion_dataframe_collect(
     df_ptr: *mut DataFrameWrapper,
     callback: crate::Callback,
     user_data: u64
