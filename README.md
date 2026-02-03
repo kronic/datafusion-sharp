@@ -1,5 +1,10 @@
 # DataFusionSharp
 
+[![CI](https://github.com/nazarii-piontko/datafusion-sharp/actions/workflows/ci.yml/badge.svg)](https://github.com/nazarii-piontko/datafusion-sharp/actions/workflows/ci.yml)
+[![.NET](https://img.shields.io/badge/.NET-8.0+-purple.svg)](https://dotnet.microsoft.com/download)
+[![Rust](https://img.shields.io/badge/Rust-1.93+-orange.svg)](https://www.rust-lang.org)
+[![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE.txt)
+
 .NET bindings for [Apache DataFusion](https://arrow.apache.org/datafusion/), a fast, extensible query engine built on Apache Arrow for high-performance analytical query processing.
 
 > **Note:** This is an independent community project and is not officially associated with or endorsed by the Apache Software Foundation or the Apache DataFusion project.
@@ -57,7 +62,7 @@ foreach (var batch in data.Batches)
 ### Prerequisites
 
 - .NET 8.0 SDK or later
-- Rust toolchain (1.70+) - Install from https://rustup.rs
+- Rust toolchain (1.93+) - Install from https://rustup.rs
 
 ### Build Steps
 
