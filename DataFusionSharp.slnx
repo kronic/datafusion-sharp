@@ -7,6 +7,12 @@
     <File Path="NOTICE.txt" />
     <File Path="README.md" />
   </Folder>
+  <Folder Name="/misc/.github/">
+    <File Path=".github\dependabot.yml" />
+  </Folder>
+  <Folder Name="/misc/.github/workflows/">
+    <File Path=".github\workflows\ci.yml" />
+  </Folder>
   <Project Path="examples/QueryCsv/QueryCsv.csproj" />
   <Project Path="src/DataFusionSharp/DataFusionSharp.csproj" />
   <Project Path="tests/DataFusionSharp.Tests/DataFusionSharp.Tests.csproj" />

@@ -2,12 +2,11 @@
 
     <PropertyGroup>
         <TargetFramework>net8.0</TargetFramework>
+        <LangVersion>14</LangVersion>
         <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>enable</Nullable>
-
         <IsPackable>false</IsPackable>
         <IsTestProject>true</IsTestProject>
-        <LangVersion>13</LangVersion>
     </PropertyGroup>
 
     <ItemGroup>
@@ -32,9 +31,7 @@
     </ItemGroup>
 
     <ItemGroup>
-      <None Update="Data\orders.csv">
-        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-      </None>
+        <None Update="Data\orders.csv" CopyToOutputDirectory="PreserveNewest" />
     </ItemGroup>
 
 </Project>
