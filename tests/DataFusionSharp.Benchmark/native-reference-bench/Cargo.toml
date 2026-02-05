@@ -1,0 +1,14 @@
+[package]
+name = "native-reference-bench"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+datafusion = "52.1.0"
+datafusion-sharp-native = { path = "../../../native" }
+tokio = { version = "1.49.0", features = ["rt-multi-thread"] }
+divan = "0.1.21"
+
+[[bench]]
+name = "dataframe"
+harness = false
