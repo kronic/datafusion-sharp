@@ -94,20 +94,52 @@ foreach (var batch in data.Batches)
 
 - .NET 8.0 or later
 - Supported platforms:
-  - Linux (x64)
+  - Linux (x64, ARM64) 🚧 Planned
   - Windows (x64) 🚧 Planned
-  - macOS (x64, ARM64) 🚧 Planned
+  - macOS (ARM64) 🚧 Planned
 
 ## Building from Source
 
 ### Prerequisites
 
-- .NET 8.0 SDK or later
+- .NET 10.0 SDK or later
 - Rust toolchain (1.93+) - Install from https://rustup.rs
 
 ### Build Steps
 
-TODO: Provide detailed build instructions
+1. **Clone the repository:**
+   ```bash
+   git clone https://github.com/nazarii-piontko/datafusion-sharp.git
+   cd datafusion-sharp
+   ```
+
+2. **Build the project:**
+   ```bash
+   dotnet build -c Release
+   ```
+
+   This will automatically:
+   - Compile the Rust native library (via cargo)
+   - Build the .NET library
+   - Link the native library into the managed library
+
+3. **Run tests:**
+   ```bash
+   dotnet test -c Release
+   ```
+
+4. **(Optional) Run benchmarks:**
+   ```bash
+   cd tests/DataFusionSharp.Benchmark
+   dotnet run -c Release
+   ```
+
+   For detailed benchmark results, see the [Benchmark README](tests/DataFusionSharp.Benchmark/README.md).
+
+5. **(Optional) Build NuGet package:**
+   ```bash
+   dotnet pack -c Release
+   ```
 
 ## Documentation
 
@@ -115,7 +147,11 @@ TODO: Link to or provide documentation for the library
 
 ## Project Structure
 
-TODO: Describe the project structure if necessary
+- [**src/DataFusionSharp/**](src/DataFusionSharp) - Core .NET library with managed wrappers
+- [**native/**](native) - Rust FFI layer bridging .NET to Apache DataFusion
+- [**tests/DataFusionSharp.Tests/**](tests/DataFusionSharp.Tests) - Integration tests
+- [**tests/DataFusionSharp.Benchmark/**](tests/DataFusionSharp.Benchmark) - Performance benchmarks with native reference implementation
+- [**examples/**](examples) - Example usage and sample data
 
 ## Contributing
 
