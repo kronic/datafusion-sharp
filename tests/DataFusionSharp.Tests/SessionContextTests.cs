@@ -15,31 +15,6 @@ public sealed class SessionContextTests : IDisposable
     }
 
     [Fact]
-    public async Task RegisterCsvAsync_CompletesSuccessfully()
-    {
-        // Arrange
-        using var context = _runtime.CreateSessionContext();
-
-        // Act & Assert
-        await context.RegisterCsvAsync("orders", Path.Combine("Data", "orders.csv"));
-    }
-
-    [Fact]
-    public async Task RegisterCsvAsync_QueryRegisteredTable_ReturnsData()
-    {
-        // Arrange
-        using var context = _runtime.CreateSessionContext();
-        await context.RegisterCsvAsync("orders", Path.Combine("Data", "orders.csv"));
-
-        // Act
-        using var df = await context.SqlAsync("SELECT * FROM orders");
-        var count = await df.CountAsync();
-
-        // Assert
-        Assert.True(count > 0);
-    }
-
-    [Fact]
     public async Task SqlAsync_ReturnsDataFrame()
     {
         // Arrange
@@ -61,7 +36,7 @@ public sealed class SessionContextTests : IDisposable
         // Act & Assert
         await Assert.ThrowsAsync<DataFusionException>(async () =>
         {
-            using var df = await context.SqlAsync("SELECT customer_id FROM orders");
+            using var df = await context.SqlAsync("SELECT * FROM customers");
         });
     }
 

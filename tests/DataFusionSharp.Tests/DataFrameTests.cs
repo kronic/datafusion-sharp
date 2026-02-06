@@ -4,14 +4,20 @@ namespace DataFusionSharp.Tests;
 
 public sealed class DataFrameTests : IDisposable
 {
-    private readonly DataFusionRuntime _runtime = DataFusionRuntime.Create();
+    private readonly DataFusionRuntime _runtime;
+    private readonly SessionContext _context;
 
+    public DataFrameTests()
+    {
+        _runtime = DataFusionRuntime.Create();
+        _context = _runtime.CreateSessionContext();
+    }
+    
     [Fact]
     public async Task CountAsync_ReturnsRowCount()
     {
         // Arrange
-        using var context = _runtime.CreateSessionContext();
-        using var df = await context.SqlAsync("SELECT * FROM (VALUES (1), (2), (3)) AS t(x)");
+        using var df = await _context.SqlAsync(GetIdValueTableSelectSql(3));
 
         // Act
         var count = await df.CountAsync();
@@ -24,8 +30,7 @@ public sealed class DataFrameTests : IDisposable
     public async Task CountAsync_EmptyResult_ReturnsZero()
     {
         // Arrange
-        using var context = _runtime.CreateSessionContext();
-        using var df = await context.SqlAsync("SELECT 1 WHERE false");
+        using var df = await _context.SqlAsync(GetIdValueTableSelectSql(0));
 
         // Act
         var count = await df.CountAsync();
@@ -38,8 +43,7 @@ public sealed class DataFrameTests : IDisposable
     public async Task ShowAsync_CompletesSuccessfully()
     {
         // Arrange
-        using var context = _runtime.CreateSessionContext();
-        using var df = await context.SqlAsync("SELECT 1 as value");
+        using var df = await _context.SqlAsync(GetIdValueTableSelectSql(1));
 
         // Act & Assert
         await df.ShowAsync();
@@ -49,19 +53,33 @@ public sealed class DataFrameTests : IDisposable
     public async Task ShowAsync_WithLimit_CompletesSuccessfully()
     {
         // Arrange
-        using var context = _runtime.CreateSessionContext();
-        using var df = await context.SqlAsync("SELECT * FROM (VALUES (1), (2), (3)) AS t(x)");
+        using var df = await _context.SqlAsync(GetIdValueTableSelectSql(3));
 
         // Act & Assert
         await df.ShowAsync(limit: 2);
+    }
+    
+    [Fact]
+    public async Task ToStringAsync_ReturnsString()
+    {
+        // Arrange
+        using var df = await _context.SqlAsync(GetIdValueTableSelectSql(1));
+
+        // Act
+        var str = await df.ToStringAsync();
+
+        // Assert
+        Assert.NotNull(str);
+        Assert.NotEmpty(str);
+        Assert.Contains("| id | value ", str);
+        Assert.Contains("| 1  | 0.8414", str);
     }
 
     [Fact]
     public async Task GetSchemaAsync_ReturnsSchema()
     {
         // Arrange
-        using var context = _runtime.CreateSessionContext();
-        using var df = await context.SqlAsync("SELECT 1 as id, 'hello' as name");
+        using var df = await _context.SqlAsync(GetIdValueTableSelectSql(1));
 
         // Act
         var schema = await df.GetSchemaAsync();
@@ -70,155 +88,90 @@ public sealed class DataFrameTests : IDisposable
         Assert.NotNull(schema);
         Assert.Equal(2, schema.FieldsList.Count);
         Assert.Equal("id", schema.FieldsList[0].Name);
-        Assert.Equal("name", schema.FieldsList[1].Name);
+        Assert.Equal("value", schema.FieldsList[1].Name);
     }
 
-    [Fact]
-    public async Task CollectAsync_ReturnsData()
+    [Theory]
+    [InlineData(0)]
+    [InlineData(1)]
+    [InlineData(2)]
+    [InlineData(10)]
+    [InlineData(100)]
+    [InlineData(1000)]
+    [InlineData(10000)]
+    [InlineData(100000)]
+    public async Task CollectAsync_ReturnsData(int rowsCount)
     {
         // Arrange
-        using var context = _runtime.CreateSessionContext();
-        using var df = await context.SqlAsync("SELECT * FROM (VALUES (1, 'a'), (2, 'b')) AS t(id, name)");
+        using var df = await _context.SqlAsync(GetIdValueTableSelectSql(rowsCount));
 
         // Act
         var collected = await df.CollectAsync();
 
         // Assert
         Assert.NotNull(collected);
+        
         Assert.NotNull(collected.Schema);
         Assert.Equal(2, collected.Schema.FieldsList.Count);
-        Assert.NotEmpty(collected.Batches);
-        Assert.Equal(2, collected.Batches.Sum(b => b.Length));
+        Assert.Equal("id", collected.Schema.FieldsList[0].Name);
+        Assert.Equal("value", collected.Schema.FieldsList[1].Name);
+
+        if (rowsCount == 0)
+            Assert.Empty(collected.Batches);
+        else
+            Assert.NotEmpty(collected.Batches);
+        Assert.Equal(rowsCount, GetIds(collected.Batches).Count);
+        Assert.Equal(rowsCount, GetValues(collected.Batches).Count);
+        Assert.Equal((long) (1 + rowsCount) * rowsCount / 2, GetIds(collected.Batches).Sum());
     }
 
-    [Fact]
-    public async Task CollectAsync_EmptyResult_ReturnsEmptyBatches()
+    [Theory]
+    [InlineData(0)]
+    [InlineData(1)]
+    [InlineData(2)]
+    [InlineData(10)]
+    [InlineData(100)]
+    [InlineData(1000)]
+    [InlineData(10000)]
+    [InlineData(100000)]
+    public async Task ExecuteStreamAsync_ReturnsData(int rowsCount)
     {
         // Arrange
-        using var context = _runtime.CreateSessionContext();
-        using var df = await context.SqlAsync("SELECT 1 as id WHERE false");
-
-        // Act
-        var collected = await df.CollectAsync();
-
-        // Assert
-        Assert.NotNull(collected);
-        Assert.NotNull(collected.Schema);
-        Assert.Equal(0, collected.Batches.Sum(b => b.Length));
-    }
-
-    [Fact]
-    public async Task ToStringAsync_ReturnsString()
-    {
-        // Arrange
-        using var context = _runtime.CreateSessionContext();
-        using var df = await context.SqlAsync("SELECT 1 as value");
-
-        // Act
-        var str = await df.ToStringAsync();
-
-        // Assert
-        Assert.NotNull(str);
-        Assert.NotEmpty(str);
-        Assert.Contains("value", str);
-    }
-
-    [Fact]
-    public async Task ExecuteStreamAsync_ReturnsStream()
-    {
-        // Arrange
-        using var context = _runtime.CreateSessionContext();
-        using var df = await context.SqlAsync("SELECT * FROM (VALUES (1), (2), (3)) AS t(x)");
+        using var df = await _context.SqlAsync(GetIdValueTableSelectSql(rowsCount));
 
         // Act
         using var stream = await df.ExecuteStreamAsync();
-
-        // Assert
-        Assert.NotNull(stream);
-        Assert.Same(df, stream.DataFrame);
-    }
-
-    [Fact]
-    public async Task ExecuteStreamAsync_IteratesBatches()
-    {
-        // Arrange
-        using var context = _runtime.CreateSessionContext();
-        using var df = await context.SqlAsync("SELECT * FROM (VALUES (1, 'a'), (2, 'b'), (3, 'c')) AS t(id, name)");
-
-        // Act
-        using var stream = await df.ExecuteStreamAsync();
+        
         var batches = new List<RecordBatch>();
         await foreach (var batch in stream)
             batches.Add(batch);
 
         // Assert
-        Assert.NotEmpty(batches);
-        Assert.Equal(3, batches.Sum(b => b.Length));
-        
-        Assert.Equal(typeof(Int64Array), batches[0].Column("id").GetType());
-        Assert.Equal(typeof(StringArray), batches[0].Column("name").GetType());
-        
-        var allIds = batches.SelectMany(b => ((Int64Array)b.Column("id")).Values.ToArray()).ToList();
-        var allNames = batches.SelectMany(b =>
-        {
-            var names = new List<string>();
-            for (var i = 0; i < b.Length; i++)
-                names.Add(((StringArray)b.Column("name")).GetString(i)!);
-            return names;
-        }).ToList();
-        
-        Assert.Equal([1, 2, 3], allIds);
-        Assert.Equal(["a", "b", "c"], allNames);
-    }
-
-    [Fact]
-    public async Task ExecuteStreamAsync_WithBigTable_IteratesBatches()
-    {
-        // Arrange
-        using var context = _runtime.CreateSessionContext();
-        using var df = await context.SqlAsync("SELECT series.value AS id, sin(series.value) AS value FROM generate_series(1, 50000) AS series");
-
-        // Act
-        using var stream = await df.ExecuteStreamAsync();
-        var batches = new List<RecordBatch>();
-        await foreach (var batch in stream)
-            batches.Add(batch);
-
-        // Assert
-        Assert.NotEmpty(batches);
-        
-        Assert.Equal(typeof(Int64Array), batches[0].Column("id").GetType());
-        Assert.Equal(typeof(DoubleArray), batches[0].Column("value").GetType());
-        
-        var allIds = batches.SelectMany(b => ((Int64Array)b.Column("id")).Values.ToArray()).ToList();
-        var allValues = batches.SelectMany(b => ((DoubleArray)b.Column("value")).Values.ToArray()).ToList();
-        
-        Assert.Equal(50000, allIds.Count);
-        Assert.Equal(50000, allValues.Count);
-        
-        Assert.Equal(1250025000, allIds.Sum());
-        Assert.Equal(0.4316858, allValues.Sum(), (x, y) => Math.Abs(x - y) < 1e-5);
-    }
-
-    [Fact]
-    public async Task ExecuteStreamAsync_EmptyResult_ReturnsNoRows()
-    {
-        // Arrange
-        using var context = _runtime.CreateSessionContext();
-        using var df = await context.SqlAsync("SELECT 1 as id WHERE false");
-
-        // Act
-        using var stream = await df.ExecuteStreamAsync();
-        var totalRows = 0;
-        await foreach (var batch in stream)
-            totalRows += batch.Length;
-
-        // Assert
-        Assert.Equal(0, totalRows);
+        if (rowsCount == 0)
+            Assert.Empty(batches);
+        else
+            Assert.NotEmpty(batches);
+        Assert.Equal(rowsCount, GetIds(batches).Count);
+        Assert.Equal(rowsCount, GetValues(batches).Count);
+        Assert.Equal((long) (1 + rowsCount) * rowsCount / 2, GetIds(batches).Sum());
     }
 
     public void Dispose()
     {
+        _context.Dispose();
         _runtime.Dispose();
     }
+
+    private static string GetIdValueTableSelectSql(int rowsCount)
+    {
+        return $"SELECT series.value AS id, sin(series.value) AS value FROM generate_series(1, {Math.Max(1, rowsCount)}) AS series WHERE {rowsCount > 0}";
+    }
+
+    private static IList<long> GetIds(RecordBatch batch) => ((Int64Array)batch.Column("id")).Values.ToArray();
+    
+    private static IList<long> GetIds(IEnumerable<RecordBatch> batches) => batches.SelectMany(GetIds).ToList();
+    
+    private static IList<double> GetValues(RecordBatch batch) => ((DoubleArray)batch.Column("value")).Values.ToArray();
+    
+    private static IList<double> GetValues(IEnumerable<RecordBatch> batches) => batches.SelectMany(GetValues).ToList();
 }

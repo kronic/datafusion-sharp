@@ -1,9 +1,10 @@
 <Solution>
   <Folder Name="/examples/">
-    <Project Path="examples/QueryCsv/QueryCsv.csproj" />
+    <Project Path="examples\CsvQuery\CsvQuery.csproj" />
   </Folder>
   <Folder Name="/misc/">
     <File Path=".gitignore" />
+    <File Path="AGENTS.md" />
     <File Path="CLAUDE.md" />
     <File Path="CONTRIBUTING.md" />
     <File Path="LICENSE.txt" />
@@ -15,6 +16,20 @@
   </Folder>
   <Folder Name="/misc/.github/workflows/">
     <File Path=".github\workflows\ci.yml" />
+  </Folder>
+  <Folder Name="/misc/datasets/" />
+  <Folder Name="/misc/datasets/orders/" />
+  <Folder Name="/misc/datasets/orders/csv/">
+    <File Path="datasets\orders\csv\customers.csv" />
+    <File Path="datasets\orders\csv\orders.csv" />
+  </Folder>
+  <Folder Name="/misc/datasets/orders/json/">
+    <File Path="datasets\orders\json\customers.json" />
+    <File Path="datasets\orders\json\orders.json" />
+  </Folder>
+  <Folder Name="/misc/datasets/orders/parquet/">
+    <File Path="datasets\orders\parquet\customers.parquet" />
+    <File Path="datasets\orders\parquet\orders.parquet" />
   </Folder>
   <Folder Name="/src/">
     <Project Path="src/DataFusionSharp/DataFusionSharp.csproj" />

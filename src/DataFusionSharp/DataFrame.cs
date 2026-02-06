@@ -134,9 +134,14 @@ public class DataFrame : IDisposable
             try
             {
                 var data = BytesData.FromIntPtr(result);
-
+                
+                // Important note about memory management:
+                // Use NativeMemoryStream instead of NativeMemoryManager directly, because the data needs to be copied into managed memory.
+                // When using NativeMemoryManager directly, ArrowStreamReader will keep references to the native memory for each ArrowArray it creates.
+                // This causes segmentation fault when native memory is released after callback returns.
                 using var nativeMemoryManager = new NativeMemoryManager(data.DataPtr, data.Length);
-                using var reader = new ArrowStreamReader(nativeMemoryManager.Memory);
+                using var nativeMemoryStream = new NativeMemoryStream(nativeMemoryManager);
+                using var reader = new ArrowStreamReader(nativeMemoryStream);
                 
                 var batches = new List<RecordBatch>();
                 while (reader.ReadNextRecordBatch() is {} batch)

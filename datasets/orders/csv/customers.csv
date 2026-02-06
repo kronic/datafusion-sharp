@@ -1,0 +1,11 @@
+customer_id,customer_name,country,city,signup_date,customer_segment
+1,Acme Corp,USA,New York,2022-01-15,Enterprise
+2,Globex Ltd,UK,London,2022-02-10,SMB
+3,Initech,USA,San Francisco,2022-03-05,SMB
+4,Umbrella Corp,Germany,Berlin,2022-03-20,Enterprise
+5,Stark Industries,USA,Los Angeles,2022-04-01,Enterprise
+6,Wayne Enterprises,USA,Gotham,2022-04-18,Enterprise
+7,Wonka Factory,UK,Manchester,2022-05-02,SMB
+8,Oscorp,USA,New York,2022-05-15,SMB
+9,Hooli,USA,Palo Alto,2022-06-01,Enterprise
+10,Vehement Capital Partners,France,Paris,2022-06-20,SMB

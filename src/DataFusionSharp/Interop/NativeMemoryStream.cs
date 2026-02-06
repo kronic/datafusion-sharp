@@ -14,6 +14,15 @@ internal sealed class NativeMemoryStream : Stream
     private int _position;
     private int _basePosition;
 
+    internal NativeMemoryStream()
+    {
+    }
+    
+    internal NativeMemoryStream(NativeMemoryManager nativeMemoryManager)
+    {
+        SetNativeMemory(nativeMemoryManager);
+    }
+
     internal void SetNativeMemory(NativeMemoryManager nativeMemoryManager)
     {
         _nativeMemoryManager = nativeMemoryManager;
