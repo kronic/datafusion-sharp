@@ -164,7 +164,7 @@ public sealed class DataFrameTests : IDisposable
 
     private static string GetIdValueTableSelectSql(int rowsCount)
     {
-        return $"SELECT series.value AS id, sin(series.value) AS value FROM generate_series(1, {Math.Max(1, rowsCount)}) AS series WHERE {rowsCount > 0}";
+        return $"SELECT s.value AS id, sin(s.value) AS value FROM generate_series(1, {Math.Max(1, rowsCount)}) AS s WHERE {rowsCount > 0}";
     }
 
     private static IList<long> GetIds(RecordBatch batch) => ((Int64Array)batch.Column("id")).Values.ToArray();

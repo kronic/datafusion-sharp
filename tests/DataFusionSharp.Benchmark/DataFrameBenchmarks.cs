@@ -19,7 +19,7 @@ public class DataFrameBenchmarks
         _runtime = DataFusionRuntime.Create();
         _context = _runtime.CreateSessionContext();
         
-        var sql = $"SELECT series.value AS id FROM generate_series(1, {RowCount}) AS series";
+        var sql = $"SELECT s.value AS id FROM generate_series(1, {RowCount}) AS s";
         _dataFrame = await _context.SqlAsync(sql);
     }
     

@@ -14,7 +14,7 @@ fn create_runtime() -> tokio::runtime::Runtime {
 fn generate_dataframe(runtime: &tokio::runtime::Runtime, row_count: u32) -> datafusion::prelude::DataFrame {
     runtime.block_on(async move {
         let session_context = SessionContext::new();
-        let sql = format!("SELECT series.value AS id FROM generate_series(1, {row_count}) AS series");
+        let sql = format!("SELECT s.value AS id FROM generate_series(1, {row_count}) AS s");
         session_context.sql(&sql).await.unwrap()
     })
 }
