@@ -19,11 +19,11 @@
 | **Session**      | Create session context                       | ✅      |                                           |
 |                  | Execute SQL queries                          | ✅      | Returns DataFrame                         |
 | **Data Sources** |                                              |        |                                           |
-|                  | CSV read                                     | ✅      | Basic, no options exposed                 |
+|                  | CSV read                                     | 🟡     | Basic, no options exposed                 |
 |                  | CSV write                                    | ❌      |                                           |
-|                  | Parquet read                                 | ✅      | Basic, no options exposed                 |
+|                  | Parquet read                                 | 🟡     | Basic, no options exposed                 |
 |                  | Parquet write                                | ❌      |                                           |
-|                  | JSON read                                    | ✅      | Basic, no options exposed                 |
+|                  | JSON read                                    | 🟡     | Basic, no options exposed                 |
 |                  | JSON write                                   | ❌      |                                           |
 |                  | In-memory tables                             | ❌      |                                           |
 | **DataFrame**    |                                              |        |                                           |
@@ -35,9 +35,7 @@
 |                  | Select, Aggregate, Join, Filter, Limit, Sort | ❌      | Use SQL instead                           |
 |                  | Explain plan                                 | ❌      |                                           |
 |                  | Write to file                                | ❌      |                                           |
-| **Arrow**        | RecordBatch support                          | ✅      | Via Apache.Arrow                          |
-|                  | Schema inspection                            | ✅      |                                           |
-|                  | IPC serialization                            | ✅      | Internal transport                        |
+| **Arrow**        | Apache Arrow support                         | ✅      | Via Apache.Arrow nuget package            |
 | **Advanced**     |                                              |        |                                           |
 |                  | UDF registration                             | ❌      |                                           |
 |                  | Catalog management                           | ❌      |                                           |
@@ -47,7 +45,7 @@
 |                  | Windows x64                                  | ❌      |                                           |
 |                  | macOS arm64                                  | ❌      |                                           |
 
-✅ Implemented  ❌ Not yet implemented
+✅ Implemented    🟡 Partially implemented    ❌ Not yet implemented
 
 ## Installation
 ```bash
