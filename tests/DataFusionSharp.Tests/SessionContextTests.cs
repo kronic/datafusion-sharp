@@ -27,17 +27,21 @@ public sealed class SessionContextTests : IDisposable
         Assert.NotNull(df);
     }
 
-    [Fact]
-    public async Task SqlAsync_InvalidQuery_ThrowsDataFusionException()
+    [Theory]
+    [InlineData("customers")]
+    [InlineData("клієнти")]
+    public async Task SqlAsync_WithMissingTable_Throws(string tableName)
     {
         // Arrange
         using var context = _runtime.CreateSessionContext();
 
         // Act & Assert
-        await Assert.ThrowsAsync<DataFusionException>(async () =>
+        var exception = await Assert.ThrowsAsync<DataFusionException>(async () =>
         {
-            using var df = await context.SqlAsync("SELECT * FROM customers");
+            using var df = await context.SqlAsync($"SELECT * FROM {tableName}");
         });
+        
+        Assert.Contains(tableName, exception.Message);
     }
 
     public void Dispose()

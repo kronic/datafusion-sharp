@@ -11,14 +11,14 @@ public sealed class ParquetTests : FileFormatTests
     {
     }
 
-    protected override Task RegisterCustomersTableAsync()
+    protected override Task RegisterCustomersTableAsync(string tableName = "customers")
     {
-        return Context.RegisterParquetAsync("customers", DataSet.CustomersParquetPath);
+        return Context.RegisterParquetAsync(tableName, DataSet.CustomersParquetPath);
     }
 
-    protected override Task RegisterOrdersTableAsync()
+    protected override Task RegisterOrdersTableAsync(string tableName = "orders")
     {
-        return Context.RegisterParquetAsync("orders", DataSet.OrdersParquetPath);
+        return Context.RegisterParquetAsync(tableName, DataSet.OrdersParquetPath);
     }
 
     protected override Task WriteTableAsync(DataFrame dataFrame, string path)

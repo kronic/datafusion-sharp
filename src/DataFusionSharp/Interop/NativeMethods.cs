@@ -23,16 +23,16 @@ internal static partial class NativeMethods
     public static partial DataFusionErrorCode ContextDestroy(IntPtr contextHandle);
     
     [LibraryImport(LibraryName, EntryPoint = "datafusion_context_register_csv")]
-    public static partial DataFusionErrorCode ContextRegisterCsv(IntPtr contextHandle, [MarshalAs(UnmanagedType.LPStr)] string tableName, [MarshalAs(UnmanagedType.LPStr)] string filePath, AsyncCallback callback, ulong userData);
+    public static partial DataFusionErrorCode ContextRegisterCsv(IntPtr contextHandle, [MarshalAs(UnmanagedType.LPUTF8Str)] string tableName, [MarshalAs(UnmanagedType.LPUTF8Str)] string filePath, AsyncCallback callback, ulong userData);
     
     [LibraryImport(LibraryName, EntryPoint = "datafusion_context_register_json")]
-    public static partial DataFusionErrorCode ContextRegisterJson(IntPtr contextHandle, [MarshalAs(UnmanagedType.LPStr)] string tableName, [MarshalAs(UnmanagedType.LPStr)] string filePath, AsyncCallback callback, ulong userData);
+    public static partial DataFusionErrorCode ContextRegisterJson(IntPtr contextHandle, [MarshalAs(UnmanagedType.LPUTF8Str)] string tableName, [MarshalAs(UnmanagedType.LPUTF8Str)] string filePath, AsyncCallback callback, ulong userData);
     
     [LibraryImport(LibraryName, EntryPoint = "datafusion_context_register_parquet")]
-    public static partial DataFusionErrorCode ContextRegisterParquet(IntPtr contextHandle, [MarshalAs(UnmanagedType.LPStr)] string tableName, [MarshalAs(UnmanagedType.LPStr)] string filePath, AsyncCallback callback, ulong userData);
+    public static partial DataFusionErrorCode ContextRegisterParquet(IntPtr contextHandle, [MarshalAs(UnmanagedType.LPUTF8Str)] string tableName, [MarshalAs(UnmanagedType.LPUTF8Str)] string filePath, AsyncCallback callback, ulong userData);
     
     [LibraryImport(LibraryName, EntryPoint = "datafusion_context_sql")]
-    public static partial DataFusionErrorCode ContextSql(IntPtr contextHandle, [MarshalAs(UnmanagedType.LPStr)] string sql, AsyncCallback callback, ulong userData);
+    public static partial DataFusionErrorCode ContextSql(IntPtr contextHandle, [MarshalAs(UnmanagedType.LPUTF8Str)] string sql, AsyncCallback callback, ulong userData);
     
     // DataFrame
     
@@ -55,13 +55,13 @@ internal static partial class NativeMethods
     public static partial DataFusionErrorCode DataFrameToString(IntPtr dataFrameHandle, AsyncCallback callback, ulong userData);
 
     [LibraryImport(LibraryName, EntryPoint = "datafusion_dataframe_write_csv")]
-    public static partial DataFusionErrorCode DataFrameWriteCsv(IntPtr dataFrameHandle, [MarshalAs(UnmanagedType.LPStr)] string path, AsyncCallback callback, ulong userData);
+    public static partial DataFusionErrorCode DataFrameWriteCsv(IntPtr dataFrameHandle, [MarshalAs(UnmanagedType.LPUTF8Str)] string path, AsyncCallback callback, ulong userData);
 
     [LibraryImport(LibraryName, EntryPoint = "datafusion_dataframe_write_json")]
-    public static partial DataFusionErrorCode DataFrameWriteJson(IntPtr dataFrameHandle, [MarshalAs(UnmanagedType.LPStr)] string path, AsyncCallback callback, ulong userData);
+    public static partial DataFusionErrorCode DataFrameWriteJson(IntPtr dataFrameHandle, [MarshalAs(UnmanagedType.LPUTF8Str)] string path, AsyncCallback callback, ulong userData);
 
     [LibraryImport(LibraryName, EntryPoint = "datafusion_dataframe_write_parquet")]
-    public static partial DataFusionErrorCode DataFrameWriteParquet(IntPtr dataFrameHandle, [MarshalAs(UnmanagedType.LPStr)] string path, AsyncCallback callback, ulong userData);
+    public static partial DataFusionErrorCode DataFrameWriteParquet(IntPtr dataFrameHandle, [MarshalAs(UnmanagedType.LPUTF8Str)] string path, AsyncCallback callback, ulong userData);
 
     // Stream
 

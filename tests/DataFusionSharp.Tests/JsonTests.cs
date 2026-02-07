@@ -11,14 +11,14 @@ public sealed class JsonTests : FileFormatTests
     {
     }
 
-    protected override Task RegisterCustomersTableAsync()
+    protected override Task RegisterCustomersTableAsync(string tableName = "customers")
     {
-        return Context.RegisterJsonAsync("customers", DataSet.CustomersJsonPath);
+        return Context.RegisterJsonAsync(tableName, DataSet.CustomersJsonPath);
     }
 
-    protected override Task RegisterOrdersTableAsync()
+    protected override Task RegisterOrdersTableAsync(string tableName = "orders")
     {
-        return Context.RegisterJsonAsync("orders", DataSet.OrdersJsonPath);
+        return Context.RegisterJsonAsync(tableName, DataSet.OrdersJsonPath);
     }
 
     protected override Task WriteTableAsync(DataFrame dataFrame, string path)

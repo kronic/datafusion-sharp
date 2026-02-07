@@ -34,9 +34,9 @@ public abstract class FileFormatTests : IDisposable
         Context = Runtime.CreateSessionContext();
     }
 
-    protected abstract Task RegisterCustomersTableAsync();
+    protected abstract Task RegisterCustomersTableAsync(string tableName = "customers");
     
-    protected abstract Task RegisterOrdersTableAsync();
+    protected abstract Task RegisterOrdersTableAsync(string tableName = "orders");
     
     protected abstract Task WriteTableAsync(DataFrame dataFrame, string path);
 
@@ -49,20 +49,22 @@ public abstract class FileFormatTests : IDisposable
         await RegisterCustomersTableAsync();
     }
 
-    [Fact]
-    public async Task QueryRegisteredTable_ReturnsData()
+    [Theory]
+    [InlineData("customers")]
+    [InlineData("клієнти")]
+    public async Task QueryTable_ReturnsData(string tableName)
     {
         // Arrange
-        await RegisterCustomersTableAsync();
+        await RegisterCustomersTableAsync(tableName);
 
         // Act
-        using var df = await Context.SqlAsync("SELECT * FROM customers");
+        using var df = await Context.SqlAsync($"SELECT * FROM {tableName}");
         var count = await df.CountAsync();
 
         // Assert
         Assert.True(count > 0);
     }
-
+    
     [Fact]
     public async Task QueryMultipleTables_ReturnsData()
     {
@@ -87,13 +89,15 @@ public abstract class FileFormatTests : IDisposable
         Assert.True(count > 0);
     }
     
-    [Fact]
-    public async Task WriteAsync_WritesFileSuccessfully()
+    [Theory]
+    [InlineData("customers")]
+    [InlineData("клієнти")]
+    public async Task WriteAsync_WritesFileSuccessfully(string fileNamePart)
     {
         // Arrange
         await RegisterCustomersTableAsync();
         using var df = await Context.SqlAsync("SELECT * FROM customers ORDER BY customer_id DESC LIMIT 2");
-        var tempPath = Path.Combine(Path.GetTempPath(), $"datafusion-sharp-write-test-output-{Guid.NewGuid():N}{FileExtension}");
+        var tempPath = Path.Combine(Path.GetTempPath(), $"datafusion-sharp-write-test-output-{fileNamePart}-{Guid.NewGuid():N}{FileExtension}");
         
         try
         {
