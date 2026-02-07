@@ -20,11 +20,11 @@
 |                  | Execute SQL queries                          | ✅      | Returns DataFrame                         |
 | **Data Sources** |                                              |        |                                           |
 |                  | CSV read                                     | 🟡     | Basic, no options exposed                 |
-|                  | CSV write                                    | ❌      |                                           |
+|                  | CSV write                                    | 🟡     | Basic, no options exposed                 |
 |                  | Parquet read                                 | 🟡     | Basic, no options exposed                 |
-|                  | Parquet write                                | ❌      |                                           |
+|                  | Parquet write                                | 🟡     | Basic, no options exposed                 |
 |                  | JSON read                                    | 🟡     | Basic, no options exposed                 |
-|                  | JSON write                                   | ❌      |                                           |
+|                  | JSON write                                   | 🟡     | Basic, no options exposed                 |
 |                  | In-memory tables                             | ❌      |                                           |
 | **DataFrame**    |                                              |        |                                           |
 |                  | Count rows                                   | ✅      | `CountAsync()`                            |

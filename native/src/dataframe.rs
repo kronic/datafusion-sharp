@@ -345,3 +345,114 @@ pub unsafe extern "C" fn datafusion_dataframe_stream_next(
 
     crate::ErrorCode::Ok
 }
+
+/// Writes the `DataFrame` to a CSV file.
+///
+/// This is an async operation. The callback is invoked on completion with no result data.
+///
+/// # Safety
+/// - `df_ptr` must be a valid pointer returned by other public functions
+/// - `path_ptr` must be a valid null-terminated UTF-8 string
+/// - `callback` must be valid to call from any thread
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn datafusion_dataframe_write_csv(
+    df_ptr: *mut DataFrameWrapper,
+    path_ptr: *const std::ffi::c_char,
+    callback: crate::Callback,
+    user_data: u64
+) -> crate::ErrorCode {
+    let df_wrapper = ffi_ref!(df_ptr);
+    let path = ffi_cstr_to_string!(path_ptr);
+
+    let runtime = std::sync::Arc::clone(&df_wrapper.runtime);
+    let df = df_wrapper.inner.clone();
+
+    dev_msg!("Executing write_csv on DataFrame: {:p} to path: {}", df_ptr, path);
+
+    runtime.spawn(async move {
+        let result = df
+            .write_csv(&path, datafusion::dataframe::DataFrameWriteOptions::default(), None)
+            .await
+            .map_err(|e| crate::ErrorInfo::new(crate::ErrorCode::DataFrameError, e));
+
+        dev_msg!("Finished executing write_csv");
+
+        crate::invoke_callback(result, callback, user_data);
+    });
+
+    crate::ErrorCode::Ok
+}
+
+/// Writes the `DataFrame` to a JSON file.
+///
+/// This is an async operation. The callback is invoked on completion with no result data.
+///
+/// # Safety
+/// - `df_ptr` must be a valid pointer returned by other public functions
+/// - `path_ptr` must be a valid null-terminated UTF-8 string
+/// - `callback` must be valid to call from any thread
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn datafusion_dataframe_write_json(
+    df_ptr: *mut DataFrameWrapper,
+    path_ptr: *const std::ffi::c_char,
+    callback: crate::Callback,
+    user_data: u64
+) -> crate::ErrorCode {
+    let df_wrapper = ffi_ref!(df_ptr);
+    let path = ffi_cstr_to_string!(path_ptr);
+
+    let runtime = std::sync::Arc::clone(&df_wrapper.runtime);
+    let df = df_wrapper.inner.clone();
+
+    dev_msg!("Executing write_json on DataFrame: {:p} to path: {}", df_ptr, path);
+
+    runtime.spawn(async move {
+        let result = df
+            .write_json(&path, datafusion::dataframe::DataFrameWriteOptions::default(), None)
+            .await
+            .map_err(|e| crate::ErrorInfo::new(crate::ErrorCode::DataFrameError, e));
+
+        dev_msg!("Finished executing write_json");
+
+        crate::invoke_callback(result, callback, user_data);
+    });
+
+    crate::ErrorCode::Ok
+}
+
+/// Writes the `DataFrame` to a Parquet file.
+///
+/// This is an async operation. The callback is invoked on completion with no result data.
+///
+/// # Safety
+/// - `df_ptr` must be a valid pointer returned by other public functions
+/// - `path_ptr` must be a valid null-terminated UTF-8 string
+/// - `callback` must be valid to call from any thread
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn datafusion_dataframe_write_parquet(
+    df_ptr: *mut DataFrameWrapper,
+    path_ptr: *const std::ffi::c_char,
+    callback: crate::Callback,
+    user_data: u64
+) -> crate::ErrorCode {
+    let df_wrapper = ffi_ref!(df_ptr);
+    let path = ffi_cstr_to_string!(path_ptr);
+
+    let runtime = std::sync::Arc::clone(&df_wrapper.runtime);
+    let df = df_wrapper.inner.clone();
+
+    dev_msg!("Executing write_parquet on DataFrame: {:p} to path: {}", df_ptr, path);
+
+    runtime.spawn(async move {
+        let result = df
+            .write_parquet(&path, datafusion::dataframe::DataFrameWriteOptions::default(), None)
+            .await
+            .map_err(|e| crate::ErrorInfo::new(crate::ErrorCode::DataFrameError, e));
+
+        dev_msg!("Finished executing write_parquet");
+
+        crate::invoke_callback(result, callback, user_data);
+    });
+
+    crate::ErrorCode::Ok
+}

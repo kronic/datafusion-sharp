@@ -54,6 +54,15 @@ internal static partial class NativeMethods
     [LibraryImport(LibraryName, EntryPoint = "datafusion_dataframe_to_string")]
     public static partial DataFusionErrorCode DataFrameToString(IntPtr dataFrameHandle, AsyncCallback callback, ulong userData);
 
+    [LibraryImport(LibraryName, EntryPoint = "datafusion_dataframe_write_csv")]
+    public static partial DataFusionErrorCode DataFrameWriteCsv(IntPtr dataFrameHandle, [MarshalAs(UnmanagedType.LPStr)] string path, AsyncCallback callback, ulong userData);
+
+    [LibraryImport(LibraryName, EntryPoint = "datafusion_dataframe_write_json")]
+    public static partial DataFusionErrorCode DataFrameWriteJson(IntPtr dataFrameHandle, [MarshalAs(UnmanagedType.LPStr)] string path, AsyncCallback callback, ulong userData);
+
+    [LibraryImport(LibraryName, EntryPoint = "datafusion_dataframe_write_parquet")]
+    public static partial DataFusionErrorCode DataFrameWriteParquet(IntPtr dataFrameHandle, [MarshalAs(UnmanagedType.LPStr)] string path, AsyncCallback callback, ulong userData);
+
     // Stream
 
     [LibraryImport(LibraryName, EntryPoint = "datafusion_dataframe_execute_stream")]

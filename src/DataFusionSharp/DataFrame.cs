@@ -99,6 +99,51 @@ public class DataFrame : IDisposable
         var streamHandle = await tcs.Task;
         return new DataFrameStream(this, streamHandle);
     }
+
+    public Task WriteCsvAsync(string path)
+    {
+        ArgumentException.ThrowIfNullOrEmpty(path);
+        
+        var (id, tcs) = AsyncOperations.Instance.Create();
+        var result = NativeMethods.DataFrameWriteCsv(_handle, path, AsyncOperationGenericCallbacks.VoidResult, id);
+        if (result != DataFusionErrorCode.Ok)
+        {
+            AsyncOperations.Instance.Abort(id);
+            throw new DataFusionException(result, "Failed to start writing DataFrame to CSV");
+        }
+
+        return tcs.Task;
+    }
+
+    public Task WriteJsonAsync(string path)
+    {
+        ArgumentException.ThrowIfNullOrEmpty(path);
+        
+        var (id, tcs) = AsyncOperations.Instance.Create();
+        var result = NativeMethods.DataFrameWriteJson(_handle, path, AsyncOperationGenericCallbacks.VoidResult, id);
+        if (result != DataFusionErrorCode.Ok)
+        {
+            AsyncOperations.Instance.Abort(id);
+            throw new DataFusionException(result, "Failed to start writing DataFrame to JSON");
+        }
+
+        return tcs.Task;
+    }
+
+    public Task WriteParquetAsync(string path)
+    {
+        ArgumentException.ThrowIfNullOrEmpty(path);
+        
+        var (id, tcs) = AsyncOperations.Instance.Create();
+        var result = NativeMethods.DataFrameWriteParquet(_handle, path, AsyncOperationGenericCallbacks.VoidResult, id);
+        if (result != DataFusionErrorCode.Ok)
+        {
+            AsyncOperations.Instance.Abort(id);
+            throw new DataFusionException(result, "Failed to start writing DataFrame to Parquet");
+        }
+
+        return tcs.Task;
+    }
     
     public void Dispose()
     {
