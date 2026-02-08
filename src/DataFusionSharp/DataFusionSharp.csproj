@@ -24,7 +24,7 @@
         <PackageTags>datafusion;apache-arrow;arrow;query-engine;sql;analytics;data-processing</PackageTags>
         <Copyright>Copyright (c) Nazarii Piontko</Copyright>
         <PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
-        <!--<GenerateDocumentationFile>true</GenerateDocumentationFile>-->
+        <GenerateDocumentationFile>true</GenerateDocumentationFile>
         <IncludeSymbols>true</IncludeSymbols>
         <SymbolPackageFormat>snupkg</SymbolPackageFormat>
         <PublishRepositoryUrl>true</PublishRepositoryUrl>

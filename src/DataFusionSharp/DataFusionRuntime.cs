@@ -2,6 +2,16 @@ using DataFusionSharp.Interop;
 
 namespace DataFusionSharp;
 
+/// <summary>
+/// Entry point for the DataFusion library. Manages the underlying async runtime that executes all DataFusion operations.
+/// </summary>
+/// <remarks>
+/// This class wraps a Tokio runtime, which is the Rust equivalent of a thread pool with async task scheduling
+/// (similar to <see cref="System.Threading.ThreadPool"/> combined with <see cref="System.Threading.Tasks.TaskScheduler"/>).
+/// Typically, only one instance of this class is needed per application. The runtime is thread-safe and can be
+/// shared across multiple threads. Create multiple <see cref="SessionContext"/> instances from a single runtime
+/// for concurrent query execution.
+/// </remarks>
 public sealed class DataFusionRuntime : IAsyncDisposable, IDisposable
 {
     private static readonly TimeSpan DefaultShutdownTimeout = TimeSpan.FromMilliseconds(500);
@@ -13,11 +23,21 @@ public sealed class DataFusionRuntime : IAsyncDisposable, IDisposable
         _handle = handle;
     }
     
+    /// <summary>
+    /// Releases unmanaged resources if <see cref="Dispose"/> was not called.
+    /// </summary>
     ~DataFusionRuntime()
     {
         ShutdownRuntime(DefaultShutdownTimeout);
     }
 
+    /// <summary>
+    /// Creates a new DataFusion runtime with optional thread pool configuration.
+    /// </summary>
+    /// <param name="workerThreads">Number of worker threads. If null, uses Tokio defaults.</param>
+    /// <param name="maxBlockingThreads">Maximum number of blocking threads. If null, uses Tokio defaults.</param>
+    /// <returns>A new <see cref="DataFusionRuntime"/> instance.</returns>
+    /// <exception cref="DataFusionException">Thrown when runtime creation fails.</exception>
     public static DataFusionRuntime Create(uint? workerThreads = null, uint? maxBlockingThreads = null)
     {
         if (workerThreads.HasValue)
@@ -32,6 +52,11 @@ public sealed class DataFusionRuntime : IAsyncDisposable, IDisposable
         return new DataFusionRuntime(handle);
     }
     
+    /// <summary>
+    /// Creates a new session context for executing queries.
+    /// </summary>
+    /// <returns>A new <see cref="SessionContext"/> instance.</returns>
+    /// <exception cref="DataFusionException">Thrown when context creation fails.</exception>
     public SessionContext CreateSessionContext()
     {
         var result = NativeMethods.ContextNew(_handle, out var contextHandle);
@@ -41,12 +66,19 @@ public sealed class DataFusionRuntime : IAsyncDisposable, IDisposable
         return new SessionContext(this, contextHandle);
     }
     
+    /// <summary>
+    /// Shuts down the runtime and releases all resources.
+    /// </summary>
     public void Dispose()
     {
         ShutdownRuntime(DefaultShutdownTimeout);
         GC.SuppressFinalize(this);
     }
-    
+
+    /// <summary>
+    /// Asynchronously shuts down the runtime and releases all resources.
+    /// </summary>
+    /// <returns>A task representing the asynchronous dispose operation.</returns>
     public ValueTask DisposeAsync()
     {
         return new ValueTask(Task.Run(Dispose));

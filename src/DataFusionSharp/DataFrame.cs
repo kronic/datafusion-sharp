@@ -4,10 +4,21 @@ using DataFusionSharp.Interop;
 
 namespace DataFusionSharp;
 
+/// <summary>
+/// Represents the result of a DataFusion query. Provides methods to collect, stream, or write results.
+/// </summary>
+/// <remarks>
+/// A DataFrame is a lazy representation of a query plan. The query is not executed until a terminal operation
+/// is called (e.g., <see cref="CollectAsync"/>, <see cref="ExecuteStreamAsync"/>, or one of the Write methods).
+/// This class is not thread-safe. Do not call methods on the same instance concurrently from multiple threads.
+/// </remarks>
 public class DataFrame : IDisposable
 {
     private IntPtr _handle;
-    
+
+    /// <summary>
+    /// Gets the session context that created this DataFrame.
+    /// </summary>
     public SessionContext Context { get; }
     
     internal DataFrame(SessionContext sessionContext, IntPtr handle)
@@ -16,11 +27,19 @@ public class DataFrame : IDisposable
         _handle = handle;
     }
     
+    /// <summary>
+    /// Releases unmanaged resources if <see cref="Dispose"/> was not called.
+    /// </summary>
     ~DataFrame()
     {
         DestroyDataFrame();
     }
     
+    /// <summary>
+    /// Returns the number of rows in this DataFrame.
+    /// </summary>
+    /// <returns>A task containing the row count.</returns>
+    /// <exception cref="DataFusionException">Thrown when the operation fails.</exception>
     public Task<ulong> CountAsync()
     {
         var (id, tcs) = AsyncOperations.Instance.Create<ulong>();
@@ -33,6 +52,12 @@ public class DataFrame : IDisposable
         return tcs.Task;
     }
 
+    /// <summary>
+    /// Prints the DataFrame contents to stdout.
+    /// </summary>
+    /// <param name="limit">Maximum number of rows to display. If null, displays all rows.</param>
+    /// <returns>A task representing the asynchronous operation.</returns>
+    /// <exception cref="DataFusionException">Thrown when the operation fails.</exception>
     public Task ShowAsync(ulong? limit = null)
     {
         if (limit.HasValue)
@@ -48,6 +73,11 @@ public class DataFrame : IDisposable
         return tcs.Task;
     }
     
+    /// <summary>
+    /// Returns a string representation of the DataFrame contents.
+    /// </summary>
+    /// <returns>A task containing the string representation.</returns>
+    /// <exception cref="DataFusionException">Thrown when the operation fails.</exception>
     public Task<string> ToStringAsync()
     {
         var (id, tcs) = AsyncOperations.Instance.Create<string>();
@@ -60,6 +90,11 @@ public class DataFrame : IDisposable
         return tcs.Task;
     }
     
+    /// <summary>
+    /// Returns the Arrow schema of this DataFrame.
+    /// </summary>
+    /// <returns>A task containing the <see cref="Schema"/>.</returns>
+    /// <exception cref="DataFusionException">Thrown when the operation fails.</exception>
     public Task<Schema> GetSchemaAsync()
     {
         var (id, tcs) = AsyncOperations.Instance.Create<Schema>();
@@ -73,6 +108,11 @@ public class DataFrame : IDisposable
         return tcs.Task;
     }
     
+    /// <summary>
+    /// Collects all data from this DataFrame into memory.
+    /// </summary>
+    /// <returns>A task containing the <see cref="CollectedData"/> with all record batches and schema.</returns>
+    /// <exception cref="DataFusionException">Thrown when the operation fails.</exception>
     public Task<CollectedData> CollectAsync()
     {
         var (id, tcs) = AsyncOperations.Instance.Create<CollectedData>();
@@ -86,6 +126,11 @@ public class DataFrame : IDisposable
         return tcs.Task;
     }
     
+    /// <summary>
+    /// Executes the query and returns a stream of record batches.
+    /// </summary>
+    /// <returns>A task containing a <see cref="DataFrameStream"/> for async enumeration.</returns>
+    /// <exception cref="DataFusionException">Thrown when the operation fails.</exception>
     public async Task<DataFrameStream> ExecuteStreamAsync()
     {
         var (id, tcs) = AsyncOperations.Instance.Create<IntPtr>();
@@ -100,6 +145,12 @@ public class DataFrame : IDisposable
         return new DataFrameStream(this, streamHandle);
     }
 
+    /// <summary>
+    /// Writes the DataFrame contents to a CSV file.
+    /// </summary>
+    /// <param name="path">The output file path.</param>
+    /// <returns>A task representing the asynchronous operation.</returns>
+    /// <exception cref="DataFusionException">Thrown when the operation fails.</exception>
     public Task WriteCsvAsync(string path)
     {
         ArgumentException.ThrowIfNullOrEmpty(path);
@@ -115,6 +166,12 @@ public class DataFrame : IDisposable
         return tcs.Task;
     }
 
+    /// <summary>
+    /// Writes the DataFrame contents to a JSON file.
+    /// </summary>
+    /// <param name="path">The output file path.</param>
+    /// <returns>A task representing the asynchronous operation.</returns>
+    /// <exception cref="DataFusionException">Thrown when the operation fails.</exception>
     public Task WriteJsonAsync(string path)
     {
         ArgumentException.ThrowIfNullOrEmpty(path);
@@ -130,6 +187,12 @@ public class DataFrame : IDisposable
         return tcs.Task;
     }
 
+    /// <summary>
+    /// Writes the DataFrame contents to a Parquet file.
+    /// </summary>
+    /// <param name="path">The output file path.</param>
+    /// <returns>A task representing the asynchronous operation.</returns>
+    /// <exception cref="DataFusionException">Thrown when the operation fails.</exception>
     public Task WriteParquetAsync(string path)
     {
         ArgumentException.ThrowIfNullOrEmpty(path);
@@ -145,6 +208,9 @@ public class DataFrame : IDisposable
         return tcs.Task;
     }
     
+    /// <summary>
+    /// Releases all resources used by this DataFrame.
+    /// </summary>
     public void Dispose()
     {
         DestroyDataFrame();
@@ -214,5 +280,10 @@ public class DataFrame : IDisposable
         NativeMethods.DataFrameDestroy(handle);
     }
     
+    /// <summary>
+    /// Contains the collected record batches and schema from a DataFrame.
+    /// </summary>
+    /// <param name="Batches">The list of collected record batches.</param>
+    /// <param name="Schema">The Arrow schema of the data.</param>
     public record CollectedData(List<RecordBatch> Batches, Schema Schema);
 }

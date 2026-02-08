@@ -2,10 +2,21 @@ using DataFusionSharp.Interop;
 
 namespace DataFusionSharp;
 
+/// <summary>
+/// Manages a DataFusion query session and provides methods for registering tables and executing SQL.
+/// </summary>
+/// <remarks>
+/// A session context maintains its own catalog of registered tables and configuration state.
+/// Multiple session contexts can be created from a single <see cref="DataFusionRuntime"/> for isolated query environments.
+/// This class is not thread-safe. Do not call methods on the same instance concurrently from multiple threads.
+/// </remarks>
 public sealed class SessionContext : IDisposable
 {
     private IntPtr _handle;
 
+    /// <summary>
+    /// Gets the runtime that owns this session context.
+    /// </summary>
     public DataFusionRuntime Runtime { get; }
     
     internal SessionContext(DataFusionRuntime runtime, IntPtr handle)
@@ -14,11 +25,21 @@ public sealed class SessionContext : IDisposable
         _handle = handle;
     }
     
+    /// <summary>
+    /// Releases unmanaged resources if <see cref="Dispose"/> was not called.
+    /// </summary>
     ~SessionContext()
     {
         DestroyContext();
     }
     
+    /// <summary>
+    /// Registers a CSV file as a table in this session.
+    /// </summary>
+    /// <param name="tableName">The name to use for the table.</param>
+    /// <param name="filePath">The path to the CSV file.</param>
+    /// <returns>A task representing the asynchronous operation.</returns>
+    /// <exception cref="DataFusionException">Thrown when table registration fails.</exception>
     public Task RegisterCsvAsync(string tableName, string filePath)
     {
         var (id, tcs) = AsyncOperations.Instance.Create();
@@ -31,6 +52,13 @@ public sealed class SessionContext : IDisposable
         return tcs.Task;
     }
     
+    /// <summary>
+    /// Registers a JSON file as a table in this session.
+    /// </summary>
+    /// <param name="tableName">The name to use for the table.</param>
+    /// <param name="filePath">The path to the JSON file.</param>
+    /// <returns>A task representing the asynchronous operation.</returns>
+    /// <exception cref="DataFusionException">Thrown when table registration fails.</exception>
     public Task RegisterJsonAsync(string tableName, string filePath)
     {
         var (id, tcs) = AsyncOperations.Instance.Create();
@@ -43,6 +71,13 @@ public sealed class SessionContext : IDisposable
         return tcs.Task;
     }
     
+    /// <summary>
+    /// Registers a Parquet file as a table in this session.
+    /// </summary>
+    /// <param name="tableName">The name to use for the table.</param>
+    /// <param name="filePath">The path to the Parquet file.</param>
+    /// <returns>A task representing the asynchronous operation.</returns>
+    /// <exception cref="DataFusionException">Thrown when table registration fails.</exception>
     public Task RegisterParquetAsync(string tableName, string filePath)
     {
         var (id, tcs) = AsyncOperations.Instance.Create();
@@ -55,6 +90,12 @@ public sealed class SessionContext : IDisposable
         return tcs.Task;
     }
     
+    /// <summary>
+    /// Executes a SQL query and returns the result as a DataFrame.
+    /// </summary>
+    /// <param name="sql">The SQL query to execute.</param>
+    /// <returns>A task containing the resulting <see cref="DataFrame"/>.</returns>
+    /// <exception cref="DataFusionException">Thrown when query execution fails.</exception>
     public async Task<DataFrame> SqlAsync(string sql)
     {
         var (id, tcs) = AsyncOperations.Instance.Create<IntPtr>();
@@ -70,6 +111,9 @@ public sealed class SessionContext : IDisposable
         return new DataFrame(this, dataFrameHandle);
     }
     
+    /// <summary>
+    /// Releases all resources used by this session context.
+    /// </summary>
     public void Dispose()
     {
         DestroyContext();

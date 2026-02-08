@@ -4,12 +4,23 @@ using DataFusionSharp.Interop;
 
 namespace DataFusionSharp;
 
+/// <summary>
+/// An async stream of Arrow record batches from a DataFrame query execution.
+/// </summary>
+/// <remarks>
+/// Use this class to process query results incrementally without loading all data into memory.
+/// Each iteration yields a <see cref="RecordBatch"/> containing a subset of the result rows.
+/// This class is not thread-safe. Do not call methods on the same instance concurrently from multiple threads.
+/// </remarks>
 public sealed class DataFrameStream : IAsyncEnumerable<RecordBatch>, IDisposable
 {
     private IntPtr _handle;
     private NativeMemoryStream? _nativeMemoryStream;
     private ArrowStreamReader? _reader;
 
+    /// <summary>
+    /// Gets the DataFrame that created this stream.
+    /// </summary>
     public DataFrame DataFrame { get; }
 
     internal DataFrameStream(DataFrame dataFrame, IntPtr handle)
@@ -18,11 +29,19 @@ public sealed class DataFrameStream : IAsyncEnumerable<RecordBatch>, IDisposable
         _handle = handle;
     }
 
+    /// <summary>
+    /// Releases unmanaged resources if <see cref="Dispose"/> was not called.
+    /// </summary>
     ~DataFrameStream()
     {
         DestroyStream();
     }
 
+    /// <summary>
+    /// Returns an async enumerator that iterates through the record batches.
+    /// </summary>
+    /// <param name="cancellationToken">A token to cancel the enumeration.</param>
+    /// <returns>An async enumerator of <see cref="RecordBatch"/>.</returns>
     public async IAsyncEnumerator<RecordBatch> GetAsyncEnumerator(CancellationToken cancellationToken = default)
     {
         while (await NextAsync() is { } batch)
@@ -32,6 +51,9 @@ public sealed class DataFrameStream : IAsyncEnumerable<RecordBatch>, IDisposable
         }
     }
 
+    /// <summary>
+    /// Releases all resources used by this stream.
+    /// </summary>
     public void Dispose()
     {
         _reader?.Dispose();
@@ -39,9 +61,9 @@ public sealed class DataFrameStream : IAsyncEnumerable<RecordBatch>, IDisposable
 
         _nativeMemoryStream?.Dispose();
         _nativeMemoryStream = null;
-        
+
         DestroyStream();
-        
+
         GC.SuppressFinalize(this);
     }
     
