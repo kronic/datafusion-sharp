@@ -14,6 +14,7 @@
   </Folder>
   <Folder Name="/misc/.github/workflows/">
     <File Path=".github\workflows\ci.yml" />
+    <File Path=".github\workflows\release.yml" />
   </Folder>
   <Folder Name="/misc/datasets/" />
   <Folder Name="/misc/datasets/orders/" />
@@ -34,6 +35,7 @@
   </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/DataFusionSharp.Benchmark/DataFusionSharp.Benchmark.csproj" />
+    <Project Path="tests/DataFusionSharp.PackageSmokeTest/DataFusionSharp.PackageSmokeTest.csproj" />
     <Project Path="tests/DataFusionSharp.Tests/DataFusionSharp.Tests.csproj" />
   </Folder>
 </Solution>

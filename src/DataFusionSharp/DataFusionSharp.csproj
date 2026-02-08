@@ -12,7 +12,8 @@
     <!-- NuGet package metadata -->
     <PropertyGroup>
         <PackageId>DataFusionSharp</PackageId>
-        <Version>0.1.0</Version>
+        <!--<Version>0.1.0</Version>--><!-- Version is set dynamically in CI pipeline -->
+        <MinVerTagPrefix>v</MinVerTagPrefix>
         <Authors>Nazarii Piontko</Authors>
         <Description>.NET bindings for Apache DataFusion - a fast, extensible query engine built on Apache Arrow for high-performance analytical query processing.</Description>
         <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
@@ -37,10 +38,10 @@
         <CargoHome Condition="'$(CargoHome)' == ''">$([System.Environment]::GetEnvironmentVariable('CARGO_HOME'))</CargoHome>
         <CargoHome Condition="'$(CargoHome)' == '' AND $([MSBuild]::IsOSPlatform('Windows'))">$([System.Environment]::GetEnvironmentVariable('USERPROFILE'))\.cargo</CargoHome>
         <CargoHome Condition="'$(CargoHome)' == '' AND !$([MSBuild]::IsOSPlatform('Windows'))">$([System.Environment]::GetEnvironmentVariable('HOME'))/.cargo</CargoHome>
-        <CargoExec Condition="$([MSBuild]::IsOSPlatform('Windows'))">$(CargoHome)\bin\cargo.exe</CargoExec>
         <CargoExec Condition="!$([MSBuild]::IsOSPlatform('Windows'))">$(CargoHome)/bin/cargo</CargoExec>
-        <RustupExec Condition="$([MSBuild]::IsOSPlatform('Windows'))">$(CargoHome)\bin\rustup.exe</RustupExec>
+        <CargoExec Condition="$([MSBuild]::IsOSPlatform('Windows'))">$(CargoHome)\bin\cargo.exe</CargoExec>
         <RustupExec Condition="!$([MSBuild]::IsOSPlatform('Windows'))">$(CargoHome)/bin/rustup</RustupExec>
+        <RustupExec Condition="$([MSBuild]::IsOSPlatform('Windows'))">$(CargoHome)\bin\rustup.exe</RustupExec>
         
         <CargoProfile Condition="'$(Configuration)' == 'Release'">release</CargoProfile>
         <CargoProfile Condition="'$(Configuration)' == 'Debug'">dev</CargoProfile>
@@ -49,19 +50,15 @@
         <CargoProfileBuildDirName Condition="'$(Configuration)' == 'Debug'">debug</CargoProfileBuildDirName>
 
         <CargoTargetLinuxX64>x86_64-unknown-linux-gnu</CargoTargetLinuxX64>
-        <CargoTargetLinuxX64Musl>x86_64-unknown-linux-musl</CargoTargetLinuxX64Musl>
         <CargoTargetLinuxARM64>aarch64-unknown-linux-gnu</CargoTargetLinuxARM64>
-        <CargoTargetLinuxARM64Musl>aarch64-unknown-linux-musl</CargoTargetLinuxARM64Musl>
         <CargoTargetWinX64>x86_64-pc-windows-msvc</CargoTargetWinX64>
         <CargoTargetOsxARM64>aarch64-apple-darwin</CargoTargetOsxARM64>
 
         <NativeLibRootDir>$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)../../native'))</NativeLibRootDir>
-        <NativeLibName>libdatafusion_sharp_native</NativeLibName>
+        <NativeLibName>datafusion_sharp_native</NativeLibName>
 
         <BuildCargoTarget Condition="'$(NETCoreSdkRuntimeIdentifier)' == 'linux-x64'">$(CargoTargetLinuxX64)</BuildCargoTarget>
-        <BuildCargoTarget Condition="'$(NETCoreSdkRuntimeIdentifier)' == 'linux-musl-x64'">$(CargoTargetLinuxX64Musl)</BuildCargoTarget>
         <BuildCargoTarget Condition="'$(NETCoreSdkRuntimeIdentifier)' == 'linux-arm64'">$(CargoTargetLinuxARM64)</BuildCargoTarget>
-        <BuildCargoTarget Condition="'$(NETCoreSdkRuntimeIdentifier)' == 'linux-musl-arm64'">$(CargoTargetLinuxARM64Musl)</BuildCargoTarget>
         <BuildCargoTarget Condition="'$(NETCoreSdkRuntimeIdentifier)' == 'win-x64'">$(CargoTargetWinX64)</BuildCargoTarget>
         <BuildCargoTarget Condition="'$(NETCoreSdkRuntimeIdentifier)' == 'osx-arm64'">$(CargoTargetOsxARM64)</BuildCargoTarget>
 
@@ -69,7 +66,9 @@
         <BuildNativeLibExt Condition="$(NETCoreSdkRuntimeIdentifier.StartsWith('win'))">.dll</BuildNativeLibExt>
         <BuildNativeLibExt Condition="$(NETCoreSdkRuntimeIdentifier.StartsWith('osx'))">.dylib</BuildNativeLibExt>
         
-        <BuildNativeLibFilePath>$(NativeLibRootDir)/target/$(BuildCargoTarget)/$(CargoProfileBuildDirName)/$(NativeLibName)$(BuildNativeLibExt)</BuildNativeLibFilePath>
+        <BuildNativeLibPrefix Condition="!$(NETCoreSdkRuntimeIdentifier.StartsWith('win'))">lib</BuildNativeLibPrefix>
+        
+        <BuildNativeLibFilePath>$(NativeLibRootDir)/target/$(BuildCargoTarget)/$(CargoProfileBuildDirName)/$(BuildNativeLibPrefix)$(NativeLibName)$(BuildNativeLibExt)</BuildNativeLibFilePath>
     </PropertyGroup>
 
     <!-- NuGet package native library files -->
@@ -77,27 +76,15 @@
     <!-- Native libraries build process for NuGet packaging is a separate step in the CI pipeline -->
     <ItemGroup>
         <!-- Linux x64 -->
-        <None Include="$(NativeLibRootDir)/target/$(CargoTargetLinuxX64)/$(CargoProfileBuildDirName)/$(NativeLibName).so"
+        <None Include="$(NativeLibRootDir)/target/$(CargoTargetLinuxX64)/$(CargoProfileBuildDirName)/lib$(NativeLibName).so"
               PackagePath="runtimes/linux-x64/native/"
-              Condition="Exists('$(NativeLibRootDir)/target/$(CargoTargetLinuxX64)/$(CargoProfileBuildDirName)/$(NativeLibName).so')"
-              Pack="true" Visible="false" />
-
-        <!-- Linux x64 musl -->
-        <None Include="$(NativeLibRootDir)/target/$(CargoTargetLinuxX64Musl)/$(CargoProfileBuildDirName)/$(NativeLibName).so"
-              PackagePath="runtimes/linux-musl-x64/native/"
-              Condition="Exists('$(NativeLibRootDir)/target/$(CargoTargetLinuxX64Musl)/$(CargoProfileBuildDirName)/$(NativeLibName).so')"
+              Condition="Exists('$(NativeLibRootDir)/target/$(CargoTargetLinuxX64)/$(CargoProfileBuildDirName)/lib$(NativeLibName).so')"
               Pack="true" Visible="false" />
 
         <!-- Linux ARM64 -->
-        <None Include="$(NativeLibRootDir)/target/$(CargoTargetLinuxARM64)/$(CargoProfileBuildDirName)/$(NativeLibName).so"
+        <None Include="$(NativeLibRootDir)/target/$(CargoTargetLinuxARM64)/$(CargoProfileBuildDirName)/lib$(NativeLibName).so"
               PackagePath="runtimes/linux-arm64/native/"
-              Condition="Exists('$(NativeLibRootDir)/target/$(CargoTargetLinuxARM64)/$(CargoProfileBuildDirName)/$(NativeLibName).so')"
-              Pack="true" Visible="false" />
-
-        <!-- Linux ARM64 musl -->
-        <None Include="$(NativeLibRootDir)/target/$(CargoTargetLinuxARM64Musl)/$(CargoProfileBuildDirName)/$(NativeLibName).so"
-              PackagePath="runtimes/linux-musl-arm64/native/"
-              Condition="Exists('$(NativeLibRootDir)/target/$(CargoTargetLinuxARM64Musl)/$(CargoProfileBuildDirName)/$(NativeLibName).so')"
+              Condition="Exists('$(NativeLibRootDir)/target/$(CargoTargetLinuxARM64)/$(CargoProfileBuildDirName)/lib$(NativeLibName).so')"
               Pack="true" Visible="false" />
 
         <!-- Windows x64 -->
@@ -107,9 +94,9 @@
               Pack="true" Visible="false" />
 
         <!-- macOS ARM64 -->
-        <None Include="$(NativeLibRootDir)/target/$(CargoTargetOsxARM64)/$(CargoProfileBuildDirName)/$(NativeLibName).dylib"
+        <None Include="$(NativeLibRootDir)/target/$(CargoTargetOsxARM64)/$(CargoProfileBuildDirName)/lib$(NativeLibName).dylib"
               PackagePath="runtimes/osx-arm64/native/"
-              Condition="Exists('$(NativeLibRootDir)/target/$(CargoTargetOsxARM64)/$(CargoProfileBuildDirName)/$(NativeLibName).dylib')"
+              Condition="Exists('$(NativeLibRootDir)/target/$(CargoTargetOsxARM64)/$(CargoProfileBuildDirName)/lib$(NativeLibName).dylib')"
               Pack="true" Visible="false" />
     </ItemGroup>
     
@@ -117,6 +104,14 @@
     <ItemGroup>
         <None Include="../../README.md" PackagePath="/" Pack="true" Visible="false" />
         <None Include="../../LICENSE.txt" PackagePath="/" Pack="true" Visible="false" />
+    </ItemGroup>
+
+    <!-- MinVer for Git-based versioning -->
+    <ItemGroup>
+        <PackageReference Include="MinVer" Version="7.0.0">
+            <PrivateAssets>all</PrivateAssets>
+            <IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
+        </PackageReference>
     </ItemGroup>
 
     <!-- Check for Cargo availability and supported platform before building native library -->

@@ -5,6 +5,11 @@ on:
     branches: [main]
   pull_request:
     branches: [main]
+  workflow_call:
+    outputs:
+      check-passed:
+        description: "Checks passed"
+        value: ${{ jobs.check.outputs.status }}
 
 env:
   CARGO_TERM_COLOR: always
@@ -14,7 +19,10 @@ env:
 jobs:
   check:
     name: Check
-    runs-on: ubuntu-24.04
+    strategy:
+      matrix:
+        os: [ubuntu-24.04]
+    runs-on: ${{ matrix.os }}
     steps:
       - name: Checkout
         uses: actions/checkout@v6
@@ -38,16 +46,16 @@ jobs:
             ~/.cargo/registry/cache/
             ~/.cargo/git/db/
             native/target/
-          key: ${{ runner.os }}-Cargo-${{ hashFiles('native/Cargo.*') }}
+          key: ${{ matrix.os }}-cargo-${{ hashFiles('native/Cargo.*') }}
           restore-keys: |
-            ${{ runner.os }}-Cargo-
+            ${{ matrix.os }}-cargo-
 
       - name: Run Build
         run: dotnet build -c Release
-        
+
       - name: Run Test
         run: dotnet test --no-build -c Release -v n --logger 'console;verbosity=normal'
-      
+
       - name: Run Rust Cargo Clippy
         working-directory: native
         run: cargo clippy --release --all-targets -- -D warnings
