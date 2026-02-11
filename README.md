@@ -1,6 +1,7 @@
 # DataFusionSharp
 
 [![CI](https://github.com/nazarii-piontko/datafusion-sharp/actions/workflows/ci.yml/badge.svg)](https://github.com/nazarii-piontko/datafusion-sharp/actions/workflows/ci.yml)
+[![Quality Gate](https://sonarcloud.io/api/project_badges/measure?project=nazarii-piontko_datafusion-sharp&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=nazarii-piontko_datafusion-sharp)
 [![.NET](https://img.shields.io/badge/.NET-8.0+-purple.svg)](https://dotnet.microsoft.com/download)
 [![Rust](https://img.shields.io/badge/Rust-1.93+-orange.svg)](https://www.rust-lang.org)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE.txt)
