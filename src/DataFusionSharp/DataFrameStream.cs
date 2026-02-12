@@ -1,3 +1,4 @@
+using System.Runtime.InteropServices;
 using Apache.Arrow;
 using Apache.Arrow.Ipc;
 using DataFusionSharp.Interop;
@@ -72,7 +73,7 @@ public sealed class DataFrameStream : IAsyncEnumerable<RecordBatch>, IDisposable
         ObjectDisposedException.ThrowIf(_handle == IntPtr.Zero, nameof(DataFrameStream));
 
         var (id, tcs) = AsyncOperations.Instance.Create<BytesData?>();
-        var result = NativeMethods.DataFrameStreamNext(_handle, CallbackForNextResult, id);
+        var result = NativeMethods.DataFrameStreamNext(_handle, CallbackForNextResultHandler, id);
         if (result != DataFusionErrorCode.Ok)
         {
             AsyncOperations.Instance.Abort(id);
@@ -119,6 +120,8 @@ public sealed class DataFrameStream : IAsyncEnumerable<RecordBatch>, IDisposable
             AsyncOperations.Instance.CompleteWithError<BytesData?>(handle, ErrorInfoData.FromIntPtr(error).ToException());
         }
     }
+    private static readonly NativeMethods.Callback CallbackForNextResultDelegate = CallbackForNextResult;
+    private static readonly IntPtr CallbackForNextResultHandler = Marshal.GetFunctionPointerForDelegate(CallbackForNextResultDelegate);
 
     private void DestroyStream()
     {
