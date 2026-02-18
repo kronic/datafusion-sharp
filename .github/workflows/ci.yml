@@ -51,9 +51,9 @@ jobs:
             ~/.cargo/registry/cache/
             ~/.cargo/git/db/
             native/target/
-          key: ubuntu-24.04-cargo-${{ hashFiles('native/Cargo.*') }}
+          key: ubuntu-24.04-cargo-${{ hashFiles('native/Cargo.*') }}-${{ github.run_id }}
           restore-keys: |
-            ubuntu-24.04-cargo-
+            ubuntu-24.04-cargo-${{ hashFiles('native/Cargo.*') }}
         continue-on-error: true
 
       - name: Setup Protoc
@@ -79,7 +79,7 @@ jobs:
             ~/.cargo/registry/cache/
             ~/.cargo/git/db/
             native/target/
-          key: ${{ steps.cache-rust-cargo.outputs.cache-primary-key }}
+          key: ubuntu-24.04-cargo-${{ hashFiles('native/Cargo.*') }}-${{ github.run_id }}
         continue-on-error: true
 
   sonar:
@@ -119,9 +119,9 @@ jobs:
             ~/.cargo/registry/cache/
             ~/.cargo/git/db/
             native/target/
-          key: ubuntu-24.04-cargo-${{ hashFiles('native/Cargo.*') }}
+          key: ubuntu-24.04-cargo-${{ hashFiles('native/Cargo.*') }}-${{ github.run_id }}
           restore-keys: |
-            ubuntu-24.04-cargo-
+            ubuntu-24.04-cargo-${{ hashFiles('native/Cargo.*') }}
         continue-on-error: true
 
       - name: Setup Protoc
@@ -160,5 +160,5 @@ jobs:
             ~/.cargo/registry/cache/
             ~/.cargo/git/db/
             native/target/
-          key: ${{ steps.cache-rust-cargo.outputs.cache-primary-key }}
+          key: ubuntu-24.04-cargo-${{ hashFiles('native/Cargo.*') }}-${{ github.run_id }}
         continue-on-error: true

@@ -61,9 +61,9 @@ jobs:
             ~/.cargo/registry/cache/
             ~/.cargo/git/db/
             native/target/
-          key: ${{ matrix.os }}-cargo-${{ hashFiles('native/Cargo.*') }}
+          key: ${{ matrix.os }}-cargo-${{ hashFiles('native/Cargo.*') }}-${{ github.run_id }}
           restore-keys: |
-            ${{ matrix.os }}-cargo-
+            ${{ matrix.os }}-cargo-${{ hashFiles('native/Cargo.*') }}
         continue-on-error: true
           
       - name: Setup Protoc
@@ -109,7 +109,7 @@ jobs:
             ~/.cargo/registry/cache/
             ~/.cargo/git/db/
             native/target/
-          key: ${{ steps.cache-rust-cargo.outputs.cache-primary-key }}
+          key: ${{ matrix.os }}-cargo-${{ hashFiles('native/Cargo.*') }}-${{ github.run_id }}
         continue-on-error: true
   
   pack:
