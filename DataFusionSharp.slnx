@@ -1,4 +1,18 @@
 <Solution>
+  <Folder Name="/datasets/" />
+  <Folder Name="/datasets/orders/" />
+  <Folder Name="/datasets/orders/csv/">
+    <File Path="datasets\orders\csv\customers.csv" />
+    <File Path="datasets\orders\csv\orders.csv" />
+  </Folder>
+  <Folder Name="/datasets/orders/json/">
+    <File Path="datasets\orders\json\customers.json" />
+    <File Path="datasets\orders\json\orders.json" />
+  </Folder>
+  <Folder Name="/datasets/orders/parquet/">
+    <File Path="datasets\orders\parquet\customers.parquet" />
+    <File Path="datasets\orders\parquet\orders.parquet" />
+  </Folder>
   <Folder Name="/examples/">
     <Project Path="examples\QueryData\QueryData.csproj" />
   </Folder>
@@ -29,6 +43,13 @@
   <Folder Name="/misc/datasets/orders/parquet/">
     <File Path="datasets\orders\parquet\customers.parquet" />
     <File Path="datasets\orders\parquet\orders.parquet" />
+  </Folder>
+  <Folder Name="/proto/">
+    <File Path="proto\csv.proto" />
+  </Folder>
+  <Folder Name="/proto/vendor/">
+    <File Path="proto\vendor\datafusion.proto" />
+    <File Path="proto\vendor\datafusion_common.proto" />
   </Folder>
   <Folder Name="/src/">
     <Project Path="src/DataFusionSharp/DataFusionSharp.csproj" />

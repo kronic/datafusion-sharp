@@ -1,3 +1,4 @@
+using System.Buffers;
 using System.Runtime.InteropServices;
 
 namespace DataFusionSharp.Interop;
@@ -6,20 +7,28 @@ namespace DataFusionSharp.Interop;
 internal struct BytesData
 {
     /// <summary>
-    /// String data pointer, UTF-8 encoded, *const u8
+    /// An empty BytesData instance with a null data pointer and zero length.
     /// </summary>
-    public IntPtr DataPtr;
+    internal static readonly BytesData Empty = new()
+    {
+        DataPtr = IntPtr.Zero,
+        Length = 0
+    };
     
     /// <summary>
-    /// String data length, u32
+    /// Data pointer, UTF-8 encoded, *const u8
+    /// </summary>
+    public nint DataPtr;
+    
+    /// <summary>
+    /// Data length, u32
     /// </summary>
     public int Length;
     
     /// <summary>
-    /// Gets the message as a managed string.
+    /// Interpret bytes as a managed string.
     /// </summary>
-    /// <returns></returns>
-    public string GetAsUtf8()
+    public readonly string ToUtf8String()
     {
         if (DataPtr == IntPtr.Zero || Length == 0)
             return string.Empty;
@@ -28,9 +37,52 @@ internal struct BytesData
         return message;
     }
     
-    public static BytesData FromIntPtr(IntPtr ptr)
+    /// <summary>
+    /// Interpret bytes as a managed byte array.
+    /// </summary>
+    public readonly byte[] ToArray()
     {
-        var data = Marshal.PtrToStructure<BytesData>(ptr);
+        if (DataPtr == 0 || Length <= 0)
+            return [];
+
+        var arr = new byte[Length];
+        Marshal.Copy(DataPtr, arr, 0, Length);
+        return arr;
+    }
+    
+    /// <summary>
+    /// Create a BytesData from an unmanaged pointer.
+    /// The caller is responsible for ensuring the pointer is valid and remains valid for the lifetime of the BytesData.
+    /// </summary>
+    /// <param name="ptr">Pointer to the unmanaged data.</param>
+    public static BytesData FromIntPtr(nint ptr)
+    {
+        // Manually read the struct fields from the pointer since Marshal.PtrToStructure is slow,
+        // and we want to avoid unnecessary copying of the data.
+        var data = new BytesData
+        {
+            DataPtr = Marshal.ReadIntPtr(ptr, 0),
+            Length = Marshal.ReadInt32(ptr, IntPtr.Size)
+        };
+        return data;
+    }
+    
+    /// <summary>
+    /// Create a BytesData from a pinned memory handle.
+    /// </summary>
+    /// <param name="handle">Memory handle containing the pinned data.</param>
+    /// <param name="length">Length of the data in bytes.</param>
+    public static BytesData FromPinned(MemoryHandle handle, int length)
+    {
+        BytesData data = new();
+        
+        unsafe
+        {
+            data.DataPtr = (nint)handle.Pointer;
+        }
+
+        data.Length = length;
+
         return data;
     }
 }

@@ -1,5 +1,6 @@
 use std::sync::Arc;
 use futures::StreamExt;
+use prost::Message;
 
 pub struct DataFrameWrapper {
     runtime: crate::RuntimeHandle,
@@ -127,12 +128,12 @@ pub unsafe extern "C" fn datafusion_dataframe_to_string(
 
         match result {
             Ok(s) => {
-                let data = crate::callback::BytesData::new(s.as_bytes());
+                let data = crate::BytesData::new(s.as_bytes());
                 crate::invoke_callback(Ok(data), callback, user_data);
             }
             Err(err) => {
                 let err_info = crate::ErrorInfo::new(crate::ErrorCode::DataFrameError, err);
-                crate::invoke_callback(Err::<crate::callback::BytesData, _>(err_info), callback, user_data);
+                crate::invoke_callback(Err::<crate::BytesData, _>(err_info), callback, user_data);
             }
         }
     });
@@ -164,7 +165,7 @@ pub unsafe extern "C" fn datafusion_dataframe_schema(
 
     let result = datafusion::arrow::ipc::writer::StreamWriter::try_new(&mut serialized_data, schema)
         .and_then(|mut s| s.flush())
-        .map(|()| crate::callback::BytesData::new(serialized_data.as_slice()))
+        .map(|()| crate::BytesData::new(serialized_data.as_slice()))
         .map_err(|e| crate::ErrorInfo::new(crate::ErrorCode::DataFrameError, e));
 
     dev_msg!("Finished executing schema on DataFrame: {:p}, schema size: {}", df_ptr, serialized_data.len());
@@ -208,7 +209,7 @@ pub unsafe extern "C" fn datafusion_dataframe_collect(
                         Ok(())
                     })
                     .map(|_| s.flush())
-                    .map(|_| crate::callback::BytesData::new(serialization_buffer.as_slice()))
+                    .map(|_| crate::BytesData::new(serialization_buffer.as_slice()))
                     .map_err(|e| crate::ErrorInfo::new(crate::ErrorCode::DataFrameError, e))
             }
             Err(e) => Err(crate::ErrorInfo::new(crate::ErrorCode::DataFrameError, e))
@@ -239,8 +240,6 @@ pub unsafe extern "C" fn datafusion_dataframe_execute_stream(
 ) -> crate::ErrorCode {
     let df_wrapper = ffi_ref!(df_ptr);
 
-    dev_msg!("Executing execute_stream on DataFrame: {:p}", df_ptr);
-
     df_wrapper.runtime.spawn(async move {
         let df = df_wrapper.inner.clone();
         let result = df
@@ -259,8 +258,6 @@ pub unsafe extern "C" fn datafusion_dataframe_execute_stream(
                     })
                     .map_err(|e| crate::ErrorInfo::new(crate::ErrorCode::DataFrameError, e))
             });
-
-        dev_msg!("Finished executing execute_stream");
 
         crate::invoke_callback(result, callback, user_data);
     });
@@ -302,8 +299,6 @@ pub unsafe extern "C" fn datafusion_dataframe_stream_next(
     user_data: u64
 ) -> crate::ErrorCode {
     let stream_wrapper = ffi_ref_mut!(stream_ptr);
-
-    dev_msg!("Executing next on DataFrameStream: {:p}", stream_ptr);
     
     let runtime = Arc::clone(&stream_wrapper.runtime);
 
@@ -321,7 +316,7 @@ pub unsafe extern "C" fn datafusion_dataframe_stream_next(
 
         match result_opt {
             Some(result) => {
-                let r = result.map(|()| crate::callback::BytesData::new(stream_wrapper.writer.get_ref()));
+                let r = result.map(|()| crate::BytesData::new(stream_wrapper.writer.get_ref()));
 
                 crate::invoke_callback(r, callback, user_data);
 
@@ -349,22 +344,26 @@ pub unsafe extern "C" fn datafusion_dataframe_stream_next(
 pub unsafe extern "C" fn datafusion_dataframe_write_csv(
     df_ptr: *mut DataFrameWrapper,
     path_ptr: *const std::ffi::c_char,
+    csv_options_bytes: crate::BytesData,
     callback: crate::Callback,
     user_data: u64
 ) -> crate::ErrorCode {
     let df_wrapper = ffi_ref!(df_ptr);
     let path = ffi_cstr_to_string!(path_ptr);
 
-    dev_msg!("Executing write_csv on DataFrame: {:p} to path: {}", df_ptr, path);
+    let Ok(csv_options) = csv_options_bytes.as_opt_slice()
+        .map(|b| datafusion_proto::protobuf::CsvOptions::decode(b)
+            .map(|pbo| datafusion::common::config::CsvOptions::from(&pbo))
+            .map_err(|_| crate::ErrorCode::InvalidArgument)
+        )
+        .transpose() else { return crate::ErrorCode::InvalidArgument };
 
     df_wrapper.runtime.spawn(async move {
         let df = df_wrapper.inner.clone();
         let result = df
-            .write_csv(&path, datafusion::dataframe::DataFrameWriteOptions::default(), None)
+            .write_csv(&path, datafusion::dataframe::DataFrameWriteOptions::default(), csv_options)
             .await
             .map_err(|e| crate::ErrorInfo::new(crate::ErrorCode::DataFrameError, e));
-
-        dev_msg!("Finished executing write_csv");
 
         crate::invoke_callback(result, callback, user_data);
     });

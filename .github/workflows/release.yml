@@ -4,6 +4,10 @@ on:
   push:
     tags: ['v*.*.*']
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 env:
   CARGO_TERM_COLOR: always
   DOTNET_NOLOGO: true
@@ -47,8 +51,9 @@ jobs:
         with:
           targets: ${{ matrix.target }}
           
-      - name: Setup Rust Cargo Cache
-        uses: actions/cache@v5
+      - name: Restore Rust Cargo Cache
+        id: cache-rust-cargo
+        uses: actions/cache/restore@v5
         with:
           path: |
             ~/.cargo/bin/
@@ -59,7 +64,10 @@ jobs:
           key: ${{ matrix.os }}-cargo-${{ hashFiles('native/Cargo.*') }}
           restore-keys: |
             ${{ matrix.os }}-cargo-
-          save-always: 'true'
+        continue-on-error: true
+          
+      - name: Setup Protoc
+        uses: arduino/setup-protoc@v3
 
       - name: Build Native Library
         working-directory: native
@@ -91,6 +99,18 @@ jobs:
           path: artifacts/**
           overwrite: true
           retention-days: 1
+
+      - name: Save Rust Cargo Cache
+        uses: actions/cache/save@v5
+        with:
+          path: |
+            ~/.cargo/bin/
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            native/target/
+          key: ${{ steps.cache-rust-cargo.outputs.cache-primary-key }}
+        continue-on-error: true
   
   pack:
     name: Pack NuGet

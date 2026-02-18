@@ -1,4 +1,6 @@
 using DataFusionSharp.Interop;
+using DataFusionSharp.Proto;
+using Google.Protobuf;
 
 namespace DataFusionSharp;
 
@@ -32,23 +34,27 @@ public sealed class SessionContext : IDisposable
     {
         DestroyContext();
     }
-    
+
     /// <summary>
     /// Registers a CSV file as a table in this session.
     /// </summary>
     /// <param name="tableName">The name to use for the table.</param>
     /// <param name="filePath">The path to the CSV file.</param>
+    /// <param name="options">Optional CSV read options to customize parsing behavior.</param>
     /// <returns>A task representing the asynchronous operation.</returns>
     /// <exception cref="DataFusionException">Thrown when table registration fails.</exception>
-    public Task RegisterCsvAsync(string tableName, string filePath)
+    public Task RegisterCsvAsync(string tableName, string filePath, CsvReadOptions? options = null)
     {
+        using var optionsData = PinnedProtobufData.FromMessage(options);
+        
         var (id, tcs) = AsyncOperations.Instance.Create();
-        var result = NativeMethods.ContextRegisterCsv(_handle, tableName, filePath, AsyncOperationGenericCallbacks.VoidResultHandler, id);
+        var result = NativeMethods.ContextRegisterCsv(_handle, tableName, filePath, optionsData.ToBytesData(), AsyncOperationGenericCallbacks.VoidResultHandler, id);
         if (result != DataFusionErrorCode.Ok)
         {
             AsyncOperations.Instance.Abort(id);
             throw new DataFusionException(result, "Failed to start registering CSV file");
         }
+
         return tcs.Task;
     }
     
@@ -106,7 +112,7 @@ public sealed class SessionContext : IDisposable
             throw new DataFusionException(result, "Failed to start executing SQL query");
         }
         
-        var dataFrameHandle = await tcs.Task;
+        var dataFrameHandle = await tcs.Task.ConfigureAwait(false);
 
         return new DataFrame(this, dataFrameHandle);
     }
