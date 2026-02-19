@@ -28,7 +28,7 @@ message CsvReadOptions {
   optional bytes comment = 6;
 
   // Whether newlines in quoted values are supported.
-  bool newlines_in_values = 7;
+  optional bool newlines_in_values = 7;
 
   // Optional schema. If unset, infer from data.
   optional datafusion_common.Schema schema = 8;
@@ -52,6 +52,6 @@ message CsvReadOptions {
   optional bytes null_regex = 14;
 
   // Allow truncated rows
-  bool truncated_rows = 15;
+  optional bool truncated_rows = 15;
 }
 

@@ -5,7 +5,7 @@ namespace DataFusionSharp.Proto;
 /// <summary>
 /// Extension methods for converting DataFusion types to Apache Arrow types.
 /// </summary>
-public static class ArrowExtensions
+internal static class ArrowExtensions
 {
     /// <summary>
     /// Converts a DataFusion schema to an Apache Arrow schema.

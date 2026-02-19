@@ -39,7 +39,9 @@ pub fn from_proto_csv_options<'a>(
     dfo.terminator = opt_first_byte("terminator", &pbo.terminator)?;
     dfo.escape = opt_first_byte("escape", &pbo.escape)?;
     dfo.comment = opt_first_byte("comment", &pbo.comment)?;
-    dfo.newlines_in_values = pbo.newlines_in_values;
+    if let Some(newlines_in_values) = pbo.newlines_in_values {
+        dfo.newlines_in_values = newlines_in_values;
+    }
     dfo.schema = schema;
     if let Some(schema_infer_max_records) = pbo.schema_infer_max_records {
         dfo.schema_infer_max_records = schema_infer_max_records as usize;
@@ -97,7 +99,9 @@ pub fn from_proto_csv_options<'a>(
     dfo.null_regex = pbo.null_regex.as_ref()
         .map(|b| std::str::from_utf8(b).map(str::to_owned))
         .transpose()?;
-    dfo.truncated_rows = pbo.truncated_rows;
+    if let Some(truncated_rows) = pbo.truncated_rows {
+        dfo.truncated_rows = truncated_rows;
+    }
 
     Ok(dfo)
 }

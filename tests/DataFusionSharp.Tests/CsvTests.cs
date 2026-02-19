@@ -1,7 +1,6 @@
 using Apache.Arrow;
 using Apache.Arrow.Types;
-using DataFusionSharp.Proto;
-using Google.Protobuf;
+using DataFusionSharp.Formats.Csv;
 using Xunit.Abstractions;
 using Field = Apache.Arrow.Field;
 using Schema = Apache.Arrow.Schema;
@@ -92,7 +91,7 @@ public sealed class CsvTests : FileFormatTests
             ]);
         var options = new CsvReadOptions
         {
-            Delimiter = ";".AsByteString()
+            Delimiter = ';'
         };
 
         // Act
@@ -120,7 +119,7 @@ public sealed class CsvTests : FileFormatTests
             ]);
         var options = new CsvReadOptions
         {
-            Quote = "~".AsByteString()
+            Quote = '~'
         };
 
         // Act
@@ -147,7 +146,7 @@ public sealed class CsvTests : FileFormatTests
             ]);
         var options = new CsvReadOptions
         {
-            Comment = "#".AsByteString()
+            Comment = '#'
         };
 
         // Act
@@ -207,7 +206,7 @@ public sealed class CsvTests : FileFormatTests
         var options = new CsvReadOptions
         {
             HasHeader = false,
-            Schema = schema.ToProto()
+            Schema = schema
         };
 
         // Act
@@ -235,7 +234,7 @@ public sealed class CsvTests : FileFormatTests
             ]);
         var options = new CsvReadOptions
         {
-            NullRegex = "^NULL$|^$".AsByteString()
+            NullRegex = "^NULL$|^$"
         };
 
         // Act
@@ -287,7 +286,7 @@ public sealed class CsvTests : FileFormatTests
             ]);
         var options = new CsvReadOptions
         {
-            FileExtension = ".txt".AsByteString()
+            FileExtension = ".txt"
         };
 
         // Act
@@ -330,9 +329,9 @@ public sealed class CsvTests : FileFormatTests
         // Arrange
         await Context.RegisterCsvAsync("customers", DataSet.CustomersCsvPath);
         using var df = await Context.SqlAsync("SELECT * FROM customers ORDER BY customer_id DESC LIMIT 2");
-        var options = new CsvOptions
+        var options = new CsvWriteOptions
         {
-            Delimiter = ByteString.CopyFromUtf8(";")
+            Delimiter = ';'
         };
         using var tempFile = await TempInputFile.CreateAsync(FileExtension);
         

@@ -1,6 +1,5 @@
+using DataFusionSharp.Formats.Csv;
 using DataFusionSharp.Interop;
-using DataFusionSharp.Proto;
-using Google.Protobuf;
 
 namespace DataFusionSharp;
 
@@ -45,7 +44,7 @@ public sealed class SessionContext : IDisposable
     /// <exception cref="DataFusionException">Thrown when table registration fails.</exception>
     public Task RegisterCsvAsync(string tableName, string filePath, CsvReadOptions? options = null)
     {
-        using var optionsData = PinnedProtobufData.FromMessage(options);
+        using var optionsData = PinnedProtobufData.FromMessage(options?.ToProto());
         
         var (id, tcs) = AsyncOperations.Instance.Create();
         var result = NativeMethods.ContextRegisterCsv(_handle, tableName, filePath, optionsData.ToBytesData(), AsyncOperationGenericCallbacks.VoidResultHandler, id);
