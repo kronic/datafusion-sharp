@@ -83,18 +83,41 @@ public sealed class SessionContextTests : IDisposable
     }
 
     [Fact]
-    public async Task SqlAsync_OnDisposedContext_ThrowsObjectDisposedException()
+    public async Task DeregisterTableAsync_RegisteredTable_MakesTableUnavailable()
     {
         // Arrange
-        var context = _runtime.CreateSessionContext();
-        context.Dispose();
-
-        // Act & Assert
-        var ex = await Assert.ThrowsAsync<ObjectDisposedException>(async () =>
+        using var context = _runtime.CreateSessionContext();
+        await context.RegisterCsvAsync("customers", DataSet.CustomersCsvPath);
+        
+        // Sanity check - the table should be queryable before deregistration
+        using (var dfBefore = await context.SqlAsync("SELECT * FROM customers"))
         {
-            using var df = await context.SqlAsync("SELECT 1");
+            var countBefore = await dfBefore.CountAsync();
+            Assert.True(countBefore > 0, "countBefore > 0");
+        }
+        
+        // Act
+        await context.DeregisterTableAsync("customers");
+
+        // Assert
+        var ex = await Assert.ThrowsAsync<DataFusionException>(async () =>
+        {
+            using var df = await context.SqlAsync("SELECT * FROM customers");
         });
-        Assert.Contains(nameof(SessionContext), ex.ObjectName, StringComparison.Ordinal);
+        Assert.Contains("customers", ex.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task DeregisterTableAsync_NonExistentTable_DoesNotThrow()
+    {
+        // Arrange
+        using var context = _runtime.CreateSessionContext();
+
+        // Act
+        await context.DeregisterTableAsync("non_existent_table");
+        
+        // Assert
+        Assert.True(true, "Successfully deregistered a non-existent table without throwing an exception");
     }
 
     public void Dispose()

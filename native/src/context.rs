@@ -189,6 +189,38 @@ pub unsafe extern "C" fn datafusion_context_register_parquet(
     crate::ErrorCode::Ok
 }
 
+/// Deregisters a table from the `SessionContext` by name.
+///
+/// This is an async operation. The callback is invoked on completion with no result data.
+///
+/// # Safety
+/// - `context_ptr` must be a valid pointer returned by `datafusion_context_new`
+/// - `table_ref_ptr` must be a valid null-terminated UTF-8 string with the name of a registered table
+/// - `callback` must be valid to call from any thread
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn datafusion_context_deregister_table(
+    context_ptr: *mut SessionContextWrapper,
+    table_ref_ptr: *const std::ffi::c_char,
+    callback: crate::Callback,
+    user_data: u64
+) -> crate::ErrorCode {
+    let context = ffi_ref!(context_ptr);
+    let table_ref = ffi_cstr_to_string!(table_ref_ptr);
+
+    dev_msg!("Deregistering table '{}'", table_ref);
+
+    let result = context.inner
+        .deregister_table(&table_ref)
+        .map_err(|e| crate::ErrorInfo::new(crate::ErrorCode::TableRegistrationFailed, e))
+        .map(|_| ());
+
+    crate::invoke_callback(result, callback, user_data);
+
+    dev_msg!("Finished deregistering table '{}'", table_ref);
+
+    crate::ErrorCode::Ok
+}
+
 /// Executes a SQL query and returns a `DataFrame`.
 ///
 /// This is an async operation. The callback is invoked on completion with a `DataFrame` pointer.

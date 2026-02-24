@@ -88,6 +88,24 @@ public sealed class SessionContext : IDisposable
     }
     
     /// <summary>
+    /// Deregisters a table from this session.
+    /// </summary>
+    /// <param name="tableName">The name of the table to deregister.</param>
+    /// <returns>A task representing the asynchronous operation.</returns>
+    /// <exception cref="DataFusionException">Thrown when table deregistration fails.</exception>
+    public Task DeregisterTableAsync(string tableName)
+    {
+        var (id, tcs) = AsyncOperations.Instance.Create();
+        var result = NativeMethods.ContextDeregisterTable(_handle.GetHandle(), tableName, AsyncOperationGenericCallbacks.VoidResultHandler, id);
+        if (result != DataFusionErrorCode.Ok)
+        {
+            AsyncOperations.Instance.Abort(id);
+            throw new DataFusionException(result, "Failed to start deregistering table");
+        }
+        return tcs.Task;
+    }
+    
+    /// <summary>
     /// Executes a SQL query and returns the result as a DataFrame.
     /// </summary>
     /// <param name="sql">The SQL query to execute.</param>
