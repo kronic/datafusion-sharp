@@ -70,7 +70,7 @@ jobs:
 
       - name: Run Rust Cargo Clippy
         working-directory: native
-        run: cargo clippy --release --all-targets -- -D warnings
+        run: cargo clippy --release --all-targets --no-deps -- -D clippy::pedantic
       
       - name: Save Rust Cargo Cache
         uses: actions/cache/save@v5

@@ -52,21 +52,6 @@ jobs:
           targets: ${{ matrix.target }}
           toolchain: 'stable'
 
-      - name: Restore Rust Cargo Cache
-        id: cache-rust-cargo
-        uses: actions/cache/restore@v5
-        with:
-          path: |
-            ~/.cargo/bin/
-            ~/.cargo/registry/index/
-            ~/.cargo/registry/cache/
-            ~/.cargo/git/db/
-            native/target/
-          key: ${{ matrix.os }}-cargo-${{ hashFiles('native/Cargo.toml') }}-${{ github.run_id }}
-          restore-keys: |
-            ${{ matrix.os }}-cargo-${{ hashFiles('native/Cargo.toml') }}
-        continue-on-error: true
-          
       - name: Setup Protoc
         uses: arduino/setup-protoc@v3
 
@@ -101,18 +86,6 @@ jobs:
           overwrite: true
           retention-days: 1
 
-      - name: Save Rust Cargo Cache
-        uses: actions/cache/save@v5
-        with:
-          path: |
-            ~/.cargo/bin/
-            ~/.cargo/registry/index/
-            ~/.cargo/registry/cache/
-            ~/.cargo/git/db/
-            native/target/
-          key: ${{ matrix.os }}-cargo-${{ hashFiles('native/Cargo.toml') }}-${{ github.run_id }}
-        continue-on-error: true
-  
   pack:
     name: Pack NuGet
     needs: pack-build-native
