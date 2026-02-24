@@ -53,7 +53,7 @@ jobs:
 
       - name: Build Native Library
         working-directory: native
-        run: cargo build --target ${{ matrix.target }} --profile release
+        run: cargo build --target ${{ matrix.target }} --profile release --lib
 
       - name: (Linux) Prepare Native Library Artifacts
         if: runner.os == 'Linux'
