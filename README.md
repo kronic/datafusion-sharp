@@ -55,15 +55,19 @@ dotnet add package DataFusionSharp
 ```csharp
 using DataFusionSharp;
 
-await using var runtime = DataFusionRuntime.Create();
+// Create runtime, which manages Tokio runtime and native resources, per application lifetime
+using var runtime = DataFusionRuntime.Create();
+
+// Create session context, which manages query execution and state, per logical session lifetime
 using var context = runtime.CreateSessionContext();
 
-// Register a CSV file as a table
+// Register a CSV file as a table (supports CSV, Parquet, JSONL)
 await context.RegisterCsvAsync("orders", "path/to/orders.csv");
+// await context.RegisterParquetAsync("orders", "path/to/orders.parquet");
+// await context.RegisterJsonAsync("orders", "path/to/orders.json");
 
 // Execute SQL query
-using var df = await context.SqlAsync(
-    "SELECT customer_id, sum(amount) AS total FROM orders GROUP BY customer_id");
+using var df = await context.SqlAsync( "SELECT customer_id, sum(amount) AS total FROM orders GROUP BY customer_id");
 
 // Display results to console
 await df.ShowAsync();
@@ -71,14 +75,17 @@ await df.ShowAsync();
 // Access schema
 var schema = await df.GetSchemaAsync();
 foreach (var field in schema.FieldsList)
-    Console.WriteLine($"- {field.Name}: {field.DataType}");
+    ... // Process schema field (name, type, etc.)
 
 // Collect as Arrow batches
-var data = await df.CollectAsync();
-foreach (var batch in data.Batches)
-{
-    // Process Arrow RecordBatch...
-}
+using var collectedData = await df.CollectAsync();
+foreach (var batch in collectedData.Batches)
+    ... // Process Arrow RecordBatch...
+
+// Collect as stream of Arrow batches
+using var stream = await df.ExecuteStreamAsync();
+await foreach (var batch in stream)
+    ... // Process streamed RecordBatch...
 ```
 
 ## Requirements
@@ -94,7 +101,7 @@ foreach (var batch in data.Batches)
 ### Prerequisites
 
 - .NET 10.0 SDK or later (how to install: https://learn.microsoft.com/en-us/dotnet/core/install/)
-- Rust 1.93+ toolchain (how to install: https://rustup.rs)
+- Rust 1.93+ (how to install: https://rustup.rs)
 - Protobuf compiler `protoc` (how to install: https://protobuf.dev/installation/)
 
 ### Build Steps
