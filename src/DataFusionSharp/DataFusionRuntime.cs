@@ -36,8 +36,7 @@ public sealed class DataFusionRuntime : IDisposable
             ArgumentOutOfRangeException.ThrowIfNegativeOrZero(maxBlockingThreads.Value);
         
         var result = NativeMethods.RuntimeNew(workerThreads ?? 0, maxBlockingThreads ?? 0, out var handle);
-        if (result != DataFusionErrorCode.Ok)
-            throw new DataFusionException(result, "Failed to create DataFusion runtime");
+        DataFusionException.ThrowIfError(result, "Failed to create DataFusion runtime");
 
         return new DataFusionRuntime(new RuntimeSafeHandle(handle));
     }
@@ -49,7 +48,7 @@ public sealed class DataFusionRuntime : IDisposable
     /// <exception cref="DataFusionException">Thrown when context creation fails.</exception>
     public SessionContext CreateSessionContext()
     {
-        var errorCode = NativeMethods.ContextNew(_handle.GetHandle(), out var contextHandle);
+        var errorCode = NativeMethods.ContextNew(_handle, out var contextHandle);
         DataFusionException.ThrowIfError(errorCode, "Failed to create DataFusion context");
         
         return new SessionContext(this, new SessionContextSafeHandle(contextHandle));
